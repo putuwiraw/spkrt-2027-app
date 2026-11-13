@@ -1,0 +1,485 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f47721">
+  <meta name="description" content="SPKRT 2027 Field Reminder">
+  <title>SPKRT 2027 - Field Reminder</title>
+
+  <style>
+    :root {
+      --orange: #f47721;
+      --orange-dark: #df5e0c;
+      --cream: #fff7f0;
+      --ink: #292929;
+      --muted: #777;
+      --line: #eee;
+      --white: #fff;
+      --green: #16834a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #f5f6f8;
+      color: var(--ink);
+      font-family: Arial, sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    .app {
+      max-width: 520px;
+      min-height: 100vh;
+      margin: auto;
+      background: white;
+      position: relative;
+      padding-bottom: 82px;
+    }
+
+    header {
+      background: var(--orange);
+      color: white;
+      padding: 23px 20px 27px;
+      border-radius: 0 0 22px 22px;
+    }
+
+    .brand {
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      font-weight: bold;
+      opacity: .9;
+    }
+
+    .brand-name {
+      font-size: 23px;
+      font-weight: 800;
+      margin-top: 8px;
+    }
+
+    .header-sub {
+      font-size: 13px;
+      margin-top: 5px;
+      opacity: .9;
+    }
+
+    .content { padding: 20px; }
+
+    .login-wrap {
+      padding: 35px 24px;
+    }
+
+    .login-logo {
+      width: 65px;
+      height: 65px;
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      background: var(--cream);
+      color: var(--orange);
+      font-size: 30px;
+      margin-bottom: 22px;
+    }
+
+    h2 { font-size: 21px; margin: 0 0 8px; }
+    .muted { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin: 19px 0 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      outline-color: var(--orange);
+      background: white;
+    }
+
+    .primary {
+      width: 100%;
+      border: 0;
+      background: var(--orange);
+      color: white;
+      padding: 15px;
+      border-radius: 11px;
+      font-weight: bold;
+      margin-top: 22px;
+      cursor: pointer;
+    }
+
+    .primary:active { background: var(--orange-dark); }
+
+    .demo-note {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--cream);
+      color: #9b4b13;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .welcome {
+      font-size: 19px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .date-text { color: var(--muted); font-size: 12px; }
+
+    .section-title {
+      font-weight: bold;
+      margin: 25px 0 13px;
+      font-size: 16px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      background: white;
+    }
+
+    .stat-icon { font-size: 22px; }
+    .stat-number { font-size: 25px; font-weight: bold; margin-top: 9px; }
+    .stat-label { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 15px;
+      margin-bottom: 11px;
+      background: white;
+    }
+
+    .card-title { font-weight: bold; font-size: 14px; }
+    .card-desc { color: var(--muted); font-size: 12px; line-height: 1.6; margin-top: 6px; }
+
+    .tag {
+      display: inline-block;
+      padding: 5px 9px;
+      background: var(--cream);
+      color: #b85a15;
+      border-radius: 20px;
+      font-size: 10px;
+      margin-top: 9px;
+      font-weight: bold;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 35px 15px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 520px;
+      background: white;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 3px calc(10px + env(safe-area-inset-bottom));
+      z-index: 5;
+    }
+
+    nav button {
+      border: 0;
+      background: none;
+      color: #888;
+      font-size: 10px;
+      cursor: pointer;
+      display: grid;
+      gap: 5px;
+      justify-items: center;
+    }
+
+    nav button span { font-size: 20px; }
+    nav button.active { color: var(--orange); font-weight: bold; }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logout {
+      border: 1px solid #ffffff88;
+      color: white;
+      background: transparent;
+      padding: 8px 12px;
+      border-radius: 9px;
+      font-size: 12px;
+    }
+
+    .notice {
+      background: #fff7ed;
+      border-left: 4px solid var(--orange);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+
+    .hidden { display: none !important; }
+
+    footer {
+      text-align: center;
+      color: #aaa;
+      font-size: 10px;
+      padding: 18px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <section id="loginScreen" class="login-wrap">
+    <div class="login-logo">📋</div>
+    <div class="brand" style="color:#f47721">FIELD REMINDER</div>
+    <h2 style="margin-top:10px">SPKRT 2027</h2>
+    <p class="muted">Masuk untuk melihat jadwal dan informasi kegiatan lapangan.</p>
+
+    <label for="kode">Kode Petugas</label>
+    <input id="kode" placeholder="Contoh: SPK001" autocomplete="username">
+
+    <label for="pin">PIN Demo</label>
+    <input id="pin" type="password" placeholder="Masukkan PIN demo">
+
+    <button class="primary" onclick="login()">Masuk Aplikasi →</button>
+
+    <div class="demo-note">
+      <b>Mode simulasi:</b><br>
+      Kode: SPK001<br>
+      PIN demo: 123456<br>
+      Data ini hanya untuk uji tampilan, bukan akun petugas sebenarnya.
+    </div>
+  </section>
+
+  <section id="mainScreen" class="hidden">
+    <header>
+      <div class="top-row">
+        <div>
+          <div class="brand">BPS • SPKRT 2027</div>
+          <div class="brand-name">FIELD REMINDER</div>
+          <div class="header-sub">Pengingat kegiatan lapangan</div>
+        </div>
+        <button class="logout" onclick="logout()">Keluar</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div id="dashboardPage">
+        <div class="welcome">Halo, <span id="namaPetugas">Petugas Contoh 1</span> 👋</div>
+        <div class="date-text" id="today"></div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-icon">📅</div>
+            <div class="stat-number" id="countSchedule">3</div>
+            <div class="stat-label">Jadwal kegiatan</div>
+          </div>
+          <div class="stat">
+            <div class="stat-icon">📢</div>
+            <div class="stat-number" id="countInfo">2</div>
+            <div class="stat-label">Pengumuman aktif</div>
+          </div>
+          <div class="stat">
+            <div class="stat-icon">📝</div>
+            <div class="stat-number" id="countTask">2</div>
+            <div class="stat-label">Tugas khusus</div>
+          </div>
+          <div class="stat">
+            <div class="stat-icon">✅</div>
+            <div class="stat-number">0</div>
+            <div class="stat-label">Konfirmasi demo</div>
+          </div>
+        </div>
+
+        <div class="notice">
+          👋 Selamat datang di SPKRT 2027. Periksa jadwal dan pengumuman secara berkala.
+        </div>
+
+        <div class="section-title">Jadwal Terdekat</div>
+        <div id="upcoming"></div>
+      </div>
+
+      <div id="schedulePage" class="hidden">
+        <h2>📅 Jadwal Kegiatan</h2>
+        <p class="muted">Daftar jadwal kegiatan lapangan SPKRT 2027.</p>
+        <div id="scheduleList"></div>
+      </div>
+
+      <div id="announcementPage" class="hidden">
+        <h2>📢 Pengumuman</h2>
+        <p class="muted">Informasi dan arahan untuk petugas.</p>
+        <div id="announcementList"></div>
+      </div>
+
+      <div id="taskPage" class="hidden">
+        <h2>📝 Tugas Khusus</h2>
+        <p class="muted">Daftar tugas dan tindak lanjut.</p>
+        <div id="taskList"></div>
+      </div>
+    </main>
+
+    <footer>SPKRT 2027 • Field Reminder • Versi simulasi</footer>
+
+    <nav>
+      <button class="active" data-page="dashboardPage" onclick="showPage('dashboardPage',this)">
+        <span>🏠</span>Beranda
+      </button>
+      <button data-page="schedulePage" onclick="showPage('schedulePage',this)">
+        <span>📅</span>Jadwal
+      </button>
+      <button data-page="announcementPage" onclick="showPage('announcementPage',this)">
+        <span>📢</span>Info
+      </button>
+      <button data-page="taskPage" onclick="showPage('taskPage',this)">
+        <span>📝</span>Tugas
+      </button>
+    </nav>
+  </section>
+</div>
+
+<script>
+  const schedules = [
+    {
+      date: "1 Januari 2027",
+      title: "Taruh Dokumen",
+      description: "Penyerahan dokumen"
+    },
+    {
+      date: "15 Januari 2027",
+      title: "Periksa Dokumen",
+      description: "Pemeriksaan dokumen"
+    },
+    {
+      date: "31 Januari 2027",
+      title: "Ambil Dokumen",
+      description: "Pengambilan dokumen"
+    }
+  ];
+
+  const announcements = [
+    {
+      title: "Persiapan Dokumen",
+      message: "Mohon siapkan dokumen sesuai jadwal.",
+      target: "SEMUA"
+    },
+    {
+      title: "Pengingat Badung",
+      message: "Mohon menindaklanjuti dokumen.",
+      target: "BADUNG"
+    }
+  ];
+
+  const tasks = [
+    {
+      title: "Perbaikan Dokumen",
+      description: "Mohon periksa kembali dokumen.",
+      target: "GIANYAR",
+      due: "5 Januari 2027"
+    },
+    {
+      title: "Konfirmasi Data",
+      description: "Mohon konfirmasi tindak lanjut.",
+      target: "Petugas P001",
+      due: "10 Januari 2027"
+    }
+  ];
+
+  function login() {
+    const kode = document.getElementById("kode").value.trim().toUpperCase();
+    const pin = document.getElementById("pin").value;
+
+    if (kode !== "SPK001" || pin !== "123456") {
+      alert("Kode atau PIN demo tidak sesuai.");
+      return;
+    }
+
+    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("mainScreen").classList.remove("hidden");
+
+    renderData();
+  }
+
+  function logout() {
+    document.getElementById("mainScreen").classList.add("hidden");
+    document.getElementById("loginScreen").classList.remove("hidden");
+    document.getElementById("pin").value = "";
+  }
+
+  function showPage(page, button) {
+    ["dashboardPage", "schedulePage", "announcementPage", "taskPage"]
+      .forEach(id => document.getElementById(id).classList.add("hidden"));
+
+    document.getElementById(page).classList.remove("hidden");
+
+    document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+    button.classList.add("active");
+    window.scrollTo(0, 0);
+  }
+
+  function card(title, description, extra) {
+    return `
+      <div class="card">
+        <div class="card-title">${title}</div>
+        <div class="card-desc">${description}</div>
+        ${extra ? `<div class="tag">${extra}</div>` : ""}
+      </div>`;
+  }
+
+  function renderData() {
+    document.getElementById("today").textContent =
+      new Date().toLocaleDateString("id-ID", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric"
+      });
+
+    document.getElementById("upcoming").innerHTML =
+      schedules.slice(0, 2).map(s =>
+        card(s.title, s.date + " • " + s.description, "JADWAL")
+      ).join("");
+
+    document.getElementById("scheduleList").innerHTML =
+      schedules.map(s =>
+        card(s.title, s.date + " • " + s.description, "AKTIF")
+      ).join("");
+
+    document.getElementById("announcementList").innerHTML =
+      announcements.map(a =>
+        card(a.title, a.message, "TARGET: " + a.target)
+      ).join("");
+
+    document.getElementById("taskList").innerHTML =
+      tasks.map(t =>
+        card(t.title, t.description + " • Tenggat: " + t.due, "TARGET: " + t.target)
+      ).join("");
+  }
+</script>
+
+</body>
+</html>
