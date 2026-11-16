@@ -1,0 +1,27 @@
+
+{
+  "id": "./",
+  "name": "SPKRT 2027 - Field Reminder",
+  "short_name": "SPKRT 2027",
+  "description": "Aplikasi pengingat kegiatan petugas SPKRT 2027",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#f47721",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
