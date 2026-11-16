@@ -26,6 +26,7 @@ nav button{border:0;background:none;color:#888;font-size:10px;cursor:pointer;dis
 .top-row{display:flex;justify-content:space-between;align-items:center;gap:10px}.logout{border:1px solid #ffffff88;color:#fff;background:transparent;padding:8px 12px;border-radius:9px;font-size:12px;cursor:pointer}
 .notice{background:#fff7ed;border-left:4px solid var(--orange);padding:12px;border-radius:8px;font-size:12px;line-height:1.6;margin-top:14px}.hidden{display:none!important}
 footer{text-align:center;color:#aaa;font-size:10px;padding:18px}.loading{text-align:center;padding:24px;color:var(--muted);font-size:13px}
+.admin-tools{display:grid;grid-template-columns:1fr;gap:10px;margin:16px 0}.admin-tools select{width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;background:#fff}.progress{height:9px;background:#eee;border-radius:20px;overflow:hidden;margin-top:8px}.progress>span{display:block;height:100%;background:var(--orange)}.small-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}.small-table th,.small-table td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}.small-table th{color:var(--muted);font-weight:bold}.admin-section{margin-top:22px}.admin-kicker{font-size:11px;color:var(--muted);margin-top:4px}
 </style>
 </head>
 <body><div class="app">
@@ -52,8 +53,9 @@ footer{text-align:center;color:#aaa;font-size:10px;padding:18px}.loading{text-al
 <div id="schedulePage" class="hidden"><h2>📅 Jadwal Kegiatan</h2><p class="muted">Daftar jadwal kegiatan lapangan SPKRT 2027.</p><div id="scheduleList"></div></div>
 <div id="announcementPage" class="hidden"><h2>📢 Pengumuman</h2><p class="muted">Informasi dan arahan untuk petugas.</p><div id="announcementList"></div></div>
 <div id="taskPage" class="hidden"><h2>📝 Tugas Khusus</h2><p class="muted">Daftar tugas dan tindak lanjut.</p><div id="taskList"></div></div>
+<div id="adminPage" class="hidden"><h2>📊 Dashboard Monitoring</h2><p class="muted">Pemantauan tugas khusus seluruh petugas SPKRT 2027.</p><div class="stats"><div class="stat"><div class="stat-icon">👥</div><div class="stat-number" id="adminPetugasCount">0</div><div class="stat-label">Petugas aktif</div></div><div class="stat"><div class="stat-icon">📝</div><div class="stat-number" id="adminTaskCount">0</div><div class="stat-label">Total tugas aktif</div></div><div class="stat"><div class="stat-icon">✅</div><div class="stat-number" id="adminDoneCount">0</div><div class="stat-label">Tugas selesai</div></div><div class="stat"><div class="stat-icon">⏳</div><div class="stat-number" id="adminPendingCount">0</div><div class="stat-label">Belum selesai</div></div></div><div class="card"><div class="card-title">Persentase penyelesaian</div><div class="stat-number" id="adminPercent">0%</div><div class="progress"><span id="adminProgress" style="width:0%"></span></div></div><div class="admin-tools"><label for="kabupatenFilter" style="margin:0">Filter Kabupaten/Kota</label><select id="kabupatenFilter"><option value="SEMUA">Semua Kabupaten/Kota</option></select></div><div class="admin-section"><div class="card-title">Rekap per Kabupaten/Kota</div><div id="adminKabupatenTable"></div></div><div class="admin-section"><div class="card-title">Rekap per Petugas</div><div id="adminPetugasTable"></div></div><div class="admin-section"><div class="card-title">Daftar Tugas</div><div id="adminTaskTable"></div></div></div>
 </main><footer>SPKRT 2027 • Field Reminder</footer>
-<nav><button class="active" data-page="dashboardPage"><span>🏠</span>Beranda</button><button data-page="schedulePage"><span>📅</span>Jadwal</button><button data-page="announcementPage"><span>📢</span>Info</button><button data-page="taskPage"><span>📝</span>Tugas</button></nav>
+<nav><button class="active" data-page="dashboardPage"><span>🏠</span>Beranda</button><button data-page="schedulePage"><span>📅</span>Jadwal</button><button data-page="announcementPage"><span>📢</span>Info</button><button data-page="taskPage" id="taskNav"><span>📝</span>Tugas</button><button data-page="adminPage" id="adminNav" class="hidden"><span>📊</span>Monitoring</button></nav>
 </section></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
@@ -72,7 +74,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const $ = id => document.getElementById(id);
-let appData = {schedules:[],announcements:[],tasks:[],confirmations:{}};
+let appData = {schedules:[],announcements:[],tasks:[],confirmations:{},petugas:[],allTasks:[],allStatuses:[]};
 let currentPetugas = null;
 let currentUser = null;
 
@@ -97,16 +99,31 @@ async function getPetugas(email, uid){
 }
 async function getRows(name){const s=await getDocs(collection(db,name));return s.docs.map(d=>d.data());}
 async function loadData(user){
- const taskQuery=query(collection(db,"tugas_khusus"),where("target_uid","==",user.uid));
- const statusQuery=query(collection(db,"status_tugas"),where("auth_uid","==",user.uid));
- const [jr,ar,ts,ss]=await Promise.all([getRows("jadwal"),getRows("pengumuman"),getDocs(taskQuery),getDocs(statusQuery)]);
- const tr=ts.docs.map(d=>({docId:d.id,...d.data()}));
- appData.confirmations={};
- ss.docs.forEach(d=>{const x=d.data();if(x.id_tugas)appData.confirmations[x.id_tugas]=x;});
- appData.schedules=jr.filter(active).map(x=>({title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(val(x,"tanggal","tenggat","date")),desc:val(x,"deskripsi","keterangan","description")})).sort((a,b)=>a.date.localeCompare(b.date,"id"));
- appData.announcements=ar.filter(active).map(x=>({title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS"}));
- appData.tasks=tr.filter(active).map(x=>({id:x.docId,idTugas:val(x,"id_tugas","ID_TUGAS")||x.docId,title:val(x,"judul_tugas","judul","title")||"Tugas khusus",desc:val(x,"deskripsi","keterangan","description"),due:dateText(val(x,"tenggat","tanggal","due_date"))}));
+ const isAdmin=String(currentPetugas?.role||"").toUpperCase()==="ADMIN";
+ const common=[getRows("jadwal"),getRows("pengumuman")];
+ if(isAdmin){
+  const [jr,ar,pr,tr,sr]=await Promise.all([...common,getRows("petugas"),getRows("tugas_khusus"),getRows("status_tugas")]);
+  appData.petugas=pr.filter(p=>String(p.status_akun||"").toUpperCase()==="AKTIF" && String(p.role||"").toUpperCase()==="PETUGAS");
+  appData.allTasks=tr.filter(active);
+  appData.allStatuses=sr;
+  appData.confirmations={};
+  sr.forEach(x=>{if(x.id_tugas)appData.confirmations[x.id_tugas]=x;});
+  appData.tasks=[];
+  appData.schedules=jr.filter(active).map(x=>({title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(val(x,"tanggal","tenggat","date")),desc:val(x,"deskripsi","keterangan","description")})).sort((a,b)=>a.date.localeCompare(b.date,"id"));
+  appData.announcements=ar.filter(active).map(x=>({title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS"}));
+ }else{
+  const taskQuery=query(collection(db,"tugas_khusus"),where("target_uid","==",user.uid));
+  const statusQuery=query(collection(db,"status_tugas"),where("auth_uid","==",user.uid));
+  const [jr,ar,ts,ss]=await Promise.all([...common,getDocs(taskQuery),getDocs(statusQuery)]);
+  const tr=ts.docs.map(d=>({docId:d.id,...d.data()}));
+  appData.confirmations={};
+  ss.docs.forEach(d=>{const x=d.data();if(x.id_tugas)appData.confirmations[x.id_tugas]=x;});
+  appData.tasks=tr.filter(active).map(x=>({id:x.docId,idTugas:val(x,"id_tugas","ID_TUGAS")||x.docId,title:val(x,"judul_tugas","judul","title")||"Tugas khusus",desc:val(x,"deskripsi","keterangan","description"),due:dateText(val(x,"tenggat","tanggal","due_date"))}));
+  appData.schedules=jr.filter(active).map(x=>({title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(val(x,"tanggal","tenggat","date")),desc:val(x,"deskripsi","keterangan","description")})).sort((a,b)=>a.date.localeCompare(b.date,"id"));
+  appData.announcements=ar.filter(active).map(x=>({title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS"}));
+ }
  render();
+ if(isAdmin)renderAdmin();
 }
 function renderTask(t){
  const status=appData.confirmations[t.idTugas];
@@ -137,6 +154,28 @@ async function confirmTask(taskId){
   render();
  }
 }
+function renderAdmin(){
+ const selected=$("kabupatenFilter").value||"SEMUA";
+ const kabs=[...new Set(appData.petugas.map(p=>p.kabupaten||"Belum diisi"))].sort();
+ const select=$("kabupatenFilter");
+ const current=select.value||"SEMUA";
+ select.innerHTML='<option value="SEMUA">Semua Kabupaten/Kota</option>'+kabs.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join("");
+ select.value=kabs.includes(current)?current:"SEMUA";
+ const people=appData.petugas.filter(p=>select.value==="SEMUA"||(p.kabupaten||"Belum diisi")===select.value);
+ const ids=new Set(people.map(p=>p.auth_uid));
+ const tasks=appData.allTasks.filter(t=>ids.has(t.target_uid));
+ const done=tasks.filter(t=>String(appData.confirmations[t.id_tugas||t.id]?.status_konfirmasi||"").toUpperCase()==="SELESAI").length;
+ const pending=tasks.length-done, pct=tasks.length?Math.round(done/tasks.length*100):0;
+ $("adminPetugasCount").textContent=people.length;$("adminTaskCount").textContent=tasks.length;$("adminDoneCount").textContent=done;$("adminPendingCount").textContent=pending;$("adminPercent").textContent=pct+"%";$("adminProgress").style.width=pct+"%";
+ const rowsByKab={};
+ people.forEach(p=>{const k=p.kabupaten||"Belum diisi";rowsByKab[k]??={petugas:0,total:0,done:0};rowsByKab[k].petugas++;});
+ tasks.forEach(t=>{const p=people.find(x=>x.auth_uid===t.target_uid);const k=p?.kabupaten||"Belum diisi";rowsByKab[k]??={petugas:0,total:0,done:0};rowsByKab[k].total++;if(String(appData.confirmations[t.id_tugas||t.id]?.status_konfirmasi||"").toUpperCase()==="SELESAI")rowsByKab[k].done++;});
+ const kabEntries=Object.entries(rowsByKab);
+ $("adminKabupatenTable").innerHTML=kabEntries.length?`<table class="small-table"><thead><tr><th>Kabupaten/Kota</th><th>Petugas</th><th>Tugas</th><th>Selesai</th></tr></thead><tbody>${kabEntries.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.petugas}</td><td>${v.total}</td><td>${v.done}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">Belum ada data petugas.</div>';
+ $("adminPetugasTable").innerHTML=people.length?`<table class="small-table"><thead><tr><th>Petugas</th><th>Kabupaten/Kota</th><th>Tugas</th><th>Selesai</th></tr></thead><tbody>${people.map(p=>{const pt=tasks.filter(t=>t.target_uid===p.auth_uid);const pd=pt.filter(t=>String(appData.confirmations[t.id_tugas||t.id]?.status_konfirmasi||"").toUpperCase()==="SELESAI").length;return `<tr><td>${esc(p.nama_petugas||p.id_petugas)}</td><td>${esc(p.kabupaten||"-")}</td><td>${pt.length}</td><td>${pd}</td></tr>`;}).join("")}</tbody></table>`:'<div class="empty">Belum ada petugas.</div>';
+ $("adminTaskTable").innerHTML=tasks.length?`<table class="small-table"><thead><tr><th>Tugas</th><th>Petugas</th><th>Tenggat</th><th>Status</th></tr></thead><tbody>${tasks.map(t=>{const p=people.find(x=>x.auth_uid===t.target_uid);const id=t.id_tugas||t.id;const isDone=String(appData.confirmations[id]?.status_konfirmasi||"").toUpperCase()==="SELESAI";return `<tr><td>${esc(t.judul_tugas||t.judul||id)}</td><td>${esc(p?.nama_petugas||t.id_petugas||"-")}</td><td>${esc(dateText(t.tenggat))}</td><td>${isDone?'<span style="color:#176b38;font-weight:bold">SELESAI</span>':'<span style="color:#b85a15;font-weight:bold">BELUM</span>'}</td></tr>`;}).join("")}</tbody></table>`:'<div class="empty">Belum ada tugas aktif untuk filter ini.</div>';
+}
+
 function render(){
  $("today").textContent=new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Makassar"});
  $("countSchedule").textContent=appData.schedules.length;$("countInfo").textContent=appData.announcements.length;$("countTask").textContent=appData.tasks.length;
@@ -156,7 +195,10 @@ async function showApp(user){
   if(p.auth_uid!==user.uid)throw new Error("UID akun tidak cocok dengan data MASTER_PETUGAS.");
   if(String(p.status_akun||"").toUpperCase()!=="AKTIF"){await signOut(auth);throw new Error("Akun petugas tidak aktif. Hubungi admin.");}
   currentPetugas=p;
-  $("namaPetugas").textContent=p.nama_petugas||"Petugas";$("wilayahPetugas").textContent=p.kabupaten?"Kabupaten/Kota: "+p.kabupaten:"";
+  const isAdmin=String(p.role||"").toUpperCase()==="ADMIN";
+  $("namaPetugas").textContent=p.nama_petugas||"Petugas";$("wilayahPetugas").textContent=isAdmin?"Akses administrator SPKRT 2027":(p.kabupaten?"Kabupaten/Kota: "+p.kabupaten:"");
+  $("adminNav").classList.toggle("hidden",!isAdmin);
+  $("taskNav").classList.toggle("hidden",isAdmin);
   await loadData(user);
  }catch(e){console.error(e);currentPetugas=null;currentUser=null;await signOut(auth);$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");showMessage(e.message||"Gagal memuat data. Periksa aturan keamanan Firestore.","error");}
 }
@@ -168,6 +210,7 @@ $("loginForm").addEventListener("submit",async e=>{
  finally{btn.disabled=false;btn.textContent="Masuk Aplikasi →";}
 });
 $("logoutButton").addEventListener("click",async()=>{await signOut(auth);$("password").value="";});
-document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{["dashboardPage","schedulePage","announcementPage","taskPage"].forEach(id=>$(id).classList.add("hidden"));$(b.dataset.page).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");window.scrollTo(0,0);}));
-onAuthStateChanged(auth,user=>{if(user)showApp(user);else{currentPetugas=null;currentUser=null;appData={schedules:[],announcements:[],tasks:[],confirmations:{}};$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");}});
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{["dashboardPage","schedulePage","announcementPage","taskPage","adminPage"].forEach(id=>$(id).classList.add("hidden"));$(b.dataset.page).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");window.scrollTo(0,0);}));
+$("kabupatenFilter").addEventListener("change",()=>{if(String(currentPetugas?.role||"").toUpperCase()==="ADMIN")renderAdmin();});
+onAuthStateChanged(auth,user=>{if(user)showApp(user);else{currentPetugas=null;currentUser=null;$("adminNav").classList.add("hidden");$("taskNav").classList.remove("hidden");appData={schedules:[],announcements:[],tasks:[],confirmations:{},petugas:[],allTasks:[],allStatuses:[]};$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");}});
 </script></body></html>
