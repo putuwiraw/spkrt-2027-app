@@ -58,7 +58,7 @@ footer{text-align:center;color:#aaa;font-size:10px;padding:18px}.loading{text-al
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC2BsmTiZDtU-8nHzTsohGKO1RfYuGcWoU",
@@ -72,7 +72,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const $ = id => document.getElementById(id);
-let appData = {schedules:[],announcements:[],tasks:[]};
+let appData = {schedules:[],announcements:[],tasks:[],confirmations:{}};
+let currentPetugas = null;
+let currentUser = null;
 
 function showMessage(message,type=""){const el=$("loginMessage");el.textContent=message;el.className="message"+(type?" "+type:"");}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -96,12 +98,44 @@ async function getPetugas(email, uid){
 async function getRows(name){const s=await getDocs(collection(db,name));return s.docs.map(d=>d.data());}
 async function loadData(user){
  const taskQuery=query(collection(db,"tugas_khusus"),where("target_uid","==",user.uid));
- const [jr,ar,ts]=await Promise.all([getRows("jadwal"),getRows("pengumuman"),getDocs(taskQuery)]);
- const tr=ts.docs.map(d=>d.data());
+ const statusQuery=query(collection(db,"status_tugas"),where("auth_uid","==",user.uid));
+ const [jr,ar,ts,ss]=await Promise.all([getRows("jadwal"),getRows("pengumuman"),getDocs(taskQuery),getDocs(statusQuery)]);
+ const tr=ts.docs.map(d=>({docId:d.id,...d.data()}));
+ appData.confirmations={};
+ ss.docs.forEach(d=>{const x=d.data();if(x.id_tugas)appData.confirmations[x.id_tugas]=x;});
  appData.schedules=jr.filter(active).map(x=>({title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(val(x,"tanggal","tenggat","date")),desc:val(x,"deskripsi","keterangan","description")})).sort((a,b)=>a.date.localeCompare(b.date,"id"));
  appData.announcements=ar.filter(active).map(x=>({title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS"}));
- appData.tasks=tr.filter(active).map(x=>({title:val(x,"judul_tugas","judul","title")||"Tugas khusus",desc:val(x,"deskripsi","keterangan","description"),due:dateText(val(x,"tenggat","tanggal","due_date"))}));
+ appData.tasks=tr.filter(active).map(x=>({id:x.docId,idTugas:val(x,"id_tugas","ID_TUGAS")||x.docId,title:val(x,"judul_tugas","judul","title")||"Tugas khusus",desc:val(x,"deskripsi","keterangan","description"),due:dateText(val(x,"tenggat","tanggal","due_date"))}));
  render();
+}
+function renderTask(t){
+ const status=appData.confirmations[t.idTugas];
+ const done=String(status?.status_konfirmasi||"").toUpperCase()==="SELESAI";
+ const info=done?`<div class="tag" style="background:#e8f5ec;color:#176b38">✓ SELESAI</div><div class="card-desc">Dikonfirmasi: ${esc(dateTimeText(status.waktu_konfirmasi))}</div>`:`<div class="tag">BELUM DIKONFIRMASI</div><button class="primary" style="margin-top:12px;padding:11px" data-confirm-task="${esc(t.idTugas)}">Konfirmasi Selesai</button>`;
+ return `<div class="card"><div class="card-title">${esc(t.title)}</div><div class="card-desc">${esc(t.desc)}${t.due?" • Tenggat: "+esc(t.due):""}</div>${info}</div>`;
+}
+function dateTimeText(v){
+ if(!v)return "baru saja";
+ if(typeof v.toDate==="function")v=v.toDate();
+ const d=v instanceof Date?v:new Date(v);
+ return Number.isNaN(d.getTime())?String(v):d.toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Makassar"})+" WITA";
+}
+async function confirmTask(taskId){
+ const task=appData.tasks.find(t=>t.idTugas===taskId);
+ if(!task||!currentUser||!currentPetugas)return;
+ const button=document.querySelector(`[data-confirm-task="${CSS.escape(taskId)}"]`);
+ if(button){button.disabled=true;button.textContent="Menyimpan...";}
+ try{
+  const statusRef=doc(db,"status_tugas",`${taskId}_${currentUser.uid}`);
+  await setDoc(statusRef,{id_status:`${taskId}_${currentUser.uid}`,id_tugas:taskId,auth_uid:currentUser.uid,id_petugas:currentPetugas.id_petugas||"",nama_petugas:currentPetugas.nama_petugas||"",status_konfirmasi:"SELESAI",waktu_konfirmasi:serverTimestamp(),keterangan:"Dikonfirmasi melalui aplikasi SPKRT 2027"});
+  appData.confirmations[taskId]={status_konfirmasi:"SELESAI",waktu_konfirmasi:new Date()};
+  render();
+  alert("Konfirmasi tugas berhasil disimpan.");
+ }catch(e){
+  console.error(e);
+  alert("Konfirmasi belum tersimpan. Kemungkinan aturan keamanan Firestore belum mengizinkan penulisan ke status_tugas. Kirimkan tangkapan layar tab Rules agar bisa kita atur dengan aman.");
+  render();
+ }
 }
 function render(){
  $("today").textContent=new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Makassar"});
@@ -109,18 +143,22 @@ function render(){
  $("upcoming").innerHTML=appData.schedules.length?appData.schedules.slice(0,2).map(x=>card(x.title,x.date+(x.desc?" • "+x.desc:""),"JADWAL")).join(""):'<div class="empty">Belum ada jadwal aktif.</div>';
  $("scheduleList").innerHTML=appData.schedules.length?appData.schedules.map(x=>card(x.title,x.date+(x.desc?" • "+x.desc:""),"AKTIF")).join(""):'<div class="empty">Belum ada jadwal aktif.</div>';
  $("announcementList").innerHTML=appData.announcements.length?appData.announcements.map(x=>card(x.title,x.message,"TARGET: "+x.target)).join(""):'<div class="empty">Belum ada pengumuman untuk kamu.</div>';
- $("taskList").innerHTML=appData.tasks.length?appData.tasks.map(x=>card(x.title,x.desc+(x.due?" • Tenggat: "+x.due:""),"TUGAS KHUSUS")).join(""):'<div class="empty">Belum ada tugas khusus untuk kamu.</div>';
+ $("taskList").innerHTML=appData.tasks.length?appData.tasks.map(renderTask).join(""):'<div class="empty">Belum ada tugas khusus untuk kamu.</div>';
+ document.querySelectorAll("[data-confirm-task]").forEach(b=>b.addEventListener("click",()=>confirmTask(b.dataset.confirmTask)));
 }
+
 async function showApp(user){
  $("loginScreen").classList.add("hidden");$("mainScreen").classList.remove("hidden");
  $("upcoming").innerHTML='<div class="loading">Memuat data dari Firebase...</div>';
  try{
+  currentUser=user;
   const p=await getPetugas(user.email||"",user.uid);
   if(p.auth_uid!==user.uid)throw new Error("UID akun tidak cocok dengan data MASTER_PETUGAS.");
   if(String(p.status_akun||"").toUpperCase()!=="AKTIF"){await signOut(auth);throw new Error("Akun petugas tidak aktif. Hubungi admin.");}
+  currentPetugas=p;
   $("namaPetugas").textContent=p.nama_petugas||"Petugas";$("wilayahPetugas").textContent=p.kabupaten?"Kabupaten/Kota: "+p.kabupaten:"";
   await loadData(user);
- }catch(e){console.error(e);await signOut(auth);$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");showMessage(e.message||"Gagal memuat data. Periksa aturan keamanan Firestore.","error");}
+ }catch(e){console.error(e);currentPetugas=null;currentUser=null;await signOut(auth);$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");showMessage(e.message||"Gagal memuat data. Periksa aturan keamanan Firestore.","error");}
 }
 $("loginForm").addEventListener("submit",async e=>{
  e.preventDefault();const email=$("email").value.trim().toLowerCase(),password=$("password").value,btn=$("loginButton");
@@ -131,5 +169,5 @@ $("loginForm").addEventListener("submit",async e=>{
 });
 $("logoutButton").addEventListener("click",async()=>{await signOut(auth);$("password").value="";});
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{["dashboardPage","schedulePage","announcementPage","taskPage"].forEach(id=>$(id).classList.add("hidden"));$(b.dataset.page).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");window.scrollTo(0,0);}));
-onAuthStateChanged(auth,user=>{if(user)showApp(user);else{$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");}});
+onAuthStateChanged(auth,user=>{if(user)showApp(user);else{currentPetugas=null;currentUser=null;appData={schedules:[],announcements:[],tasks:[],confirmations:{}};$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");}});
 </script></body></html>
