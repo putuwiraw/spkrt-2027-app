@@ -1,485 +1,141 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f47721">
-  <meta name="description" content="SPKRT 2027 Field Reminder">
-  <title>SPKRT 2027 - Field Reminder</title>
-
-  <style>
-    :root {
-      --orange: #f47721;
-      --orange-dark: #df5e0c;
-      --cream: #fff7f0;
-      --ink: #292929;
-      --muted: #777;
-      --line: #eee;
-      --white: #fff;
-      --green: #16834a;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: #f5f6f8;
-      color: var(--ink);
-      font-family: Arial, sans-serif;
-    }
-
-    button, input { font: inherit; }
-
-    .app {
-      max-width: 520px;
-      min-height: 100vh;
-      margin: auto;
-      background: white;
-      position: relative;
-      padding-bottom: 82px;
-    }
-
-    header {
-      background: var(--orange);
-      color: white;
-      padding: 23px 20px 27px;
-      border-radius: 0 0 22px 22px;
-    }
-
-    .brand {
-      font-size: 12px;
-      letter-spacing: 1.5px;
-      font-weight: bold;
-      opacity: .9;
-    }
-
-    .brand-name {
-      font-size: 23px;
-      font-weight: 800;
-      margin-top: 8px;
-    }
-
-    .header-sub {
-      font-size: 13px;
-      margin-top: 5px;
-      opacity: .9;
-    }
-
-    .content { padding: 20px; }
-
-    .login-wrap {
-      padding: 35px 24px;
-    }
-
-    .login-logo {
-      width: 65px;
-      height: 65px;
-      border-radius: 20px;
-      display: grid;
-      place-items: center;
-      background: var(--cream);
-      color: var(--orange);
-      font-size: 30px;
-      margin-bottom: 22px;
-    }
-
-    h2 { font-size: 21px; margin: 0 0 8px; }
-    .muted { color: var(--muted); font-size: 13px; line-height: 1.6; }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: bold;
-      margin: 19px 0 8px;
-    }
-
-    input {
-      width: 100%;
-      padding: 14px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      outline-color: var(--orange);
-      background: white;
-    }
-
-    .primary {
-      width: 100%;
-      border: 0;
-      background: var(--orange);
-      color: white;
-      padding: 15px;
-      border-radius: 11px;
-      font-weight: bold;
-      margin-top: 22px;
-      cursor: pointer;
-    }
-
-    .primary:active { background: var(--orange-dark); }
-
-    .demo-note {
-      margin-top: 18px;
-      padding: 12px;
-      border-radius: 10px;
-      background: var(--cream);
-      color: #9b4b13;
-      font-size: 12px;
-      line-height: 1.6;
-    }
-
-    .welcome {
-      font-size: 19px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-
-    .date-text { color: var(--muted); font-size: 12px; }
-
-    .section-title {
-      font-weight: bold;
-      margin: 25px 0 13px;
-      font-size: 16px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    .stat {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 16px;
-      background: white;
-    }
-
-    .stat-icon { font-size: 22px; }
-    .stat-number { font-size: 25px; font-weight: bold; margin-top: 9px; }
-    .stat-label { color: var(--muted); font-size: 12px; margin-top: 4px; }
-
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      padding: 15px;
-      margin-bottom: 11px;
-      background: white;
-    }
-
-    .card-title { font-weight: bold; font-size: 14px; }
-    .card-desc { color: var(--muted); font-size: 12px; line-height: 1.6; margin-top: 6px; }
-
-    .tag {
-      display: inline-block;
-      padding: 5px 9px;
-      background: var(--cream);
-      color: #b85a15;
-      border-radius: 20px;
-      font-size: 10px;
-      margin-top: 9px;
-      font-weight: bold;
-    }
-
-    .empty {
-      text-align: center;
-      padding: 35px 15px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    nav {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      max-width: 520px;
-      background: white;
-      border-top: 1px solid var(--line);
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 3px calc(10px + env(safe-area-inset-bottom));
-      z-index: 5;
-    }
-
-    nav button {
-      border: 0;
-      background: none;
-      color: #888;
-      font-size: 10px;
-      cursor: pointer;
-      display: grid;
-      gap: 5px;
-      justify-items: center;
-    }
-
-    nav button span { font-size: 20px; }
-    nav button.active { color: var(--orange); font-weight: bold; }
-
-    .top-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logout {
-      border: 1px solid #ffffff88;
-      color: white;
-      background: transparent;
-      padding: 8px 12px;
-      border-radius: 9px;
-      font-size: 12px;
-    }
-
-    .notice {
-      background: #fff7ed;
-      border-left: 4px solid var(--orange);
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      line-height: 1.6;
-      margin-top: 14px;
-    }
-
-    .hidden { display: none !important; }
-
-    footer {
-      text-align: center;
-      color: #aaa;
-      font-size: 10px;
-      padding: 18px;
-    }
-  </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f47721"><meta name="description" content="SPKRT 2027 Field Reminder">
+<title>SPKRT 2027 - Field Reminder</title>
+<style>
+:root{--orange:#f47721;--orange-dark:#df5e0c;--cream:#fff7f0;--ink:#292929;--muted:#777;--line:#eee;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:var(--ink);font-family:Arial,sans-serif}button,input{font:inherit}
+.app{max-width:520px;min-height:100vh;margin:auto;background:#fff;position:relative;padding-bottom:82px}
+header{background:var(--orange);color:#fff;padding:23px 20px 27px;border-radius:0 0 22px 22px}
+.brand{font-size:12px;letter-spacing:1.5px;font-weight:bold;opacity:.9}.brand-name{font-size:23px;font-weight:800;margin-top:8px}.header-sub{font-size:13px;margin-top:5px;opacity:.9}
+.content{padding:20px}.login-wrap{padding:35px 24px}.login-logo{width:65px;height:65px;border-radius:20px;display:grid;place-items:center;background:var(--cream);color:var(--orange);font-size:30px;margin-bottom:22px}
+h2{font-size:21px;margin:0 0 8px}.muted{color:var(--muted);font-size:13px;line-height:1.6}
+label{display:block;font-size:13px;font-weight:bold;margin:19px 0 8px}input{width:100%;padding:14px;border:1px solid #ddd;border-radius:10px;outline-color:var(--orange);background:#fff}
+.primary{width:100%;border:0;background:var(--orange);color:#fff;padding:15px;border-radius:11px;font-weight:bold;margin-top:22px;cursor:pointer}.primary:disabled{opacity:.65;cursor:wait}.primary:active{background:var(--orange-dark)}
+.message{margin-top:14px;padding:12px;border-radius:10px;background:var(--cream);color:#9b4b13;font-size:12px;line-height:1.6}.error{background:#fff1f0;color:var(--red)}
+.welcome{font-size:19px;font-weight:bold;margin-bottom:5px}.date-text{color:var(--muted);font-size:12px}.section-title{font-weight:bold;margin:25px 0 13px;font-size:16px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}.stat{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}
+.stat-icon{font-size:22px}.stat-number{font-size:25px;font-weight:bold;margin-top:9px}.stat-label{color:var(--muted);font-size:12px;margin-top:4px}
+.card{border:1px solid var(--line);border-radius:13px;padding:15px;margin-bottom:11px;background:#fff}.card-title{font-weight:bold;font-size:14px}
+.card-desc{color:var(--muted);font-size:12px;line-height:1.6;margin-top:6px;white-space:pre-wrap}.tag{display:inline-block;padding:5px 9px;background:var(--cream);color:#b85a15;border-radius:20px;font-size:10px;margin-top:9px;font-weight:bold}
+.empty{text-align:center;padding:35px 15px;color:var(--muted);font-size:13px}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:10px 3px calc(10px + env(safe-area-inset-bottom));z-index:5}
+nav button{border:0;background:none;color:#888;font-size:10px;cursor:pointer;display:grid;gap:5px;justify-items:center}nav button span{font-size:20px}nav button.active{color:var(--orange);font-weight:bold}
+.top-row{display:flex;justify-content:space-between;align-items:center;gap:10px}.logout{border:1px solid #ffffff88;color:#fff;background:transparent;padding:8px 12px;border-radius:9px;font-size:12px;cursor:pointer}
+.notice{background:#fff7ed;border-left:4px solid var(--orange);padding:12px;border-radius:8px;font-size:12px;line-height:1.6;margin-top:14px}.hidden{display:none!important}
+footer{text-align:center;color:#aaa;font-size:10px;padding:18px}.loading{text-align:center;padding:24px;color:var(--muted);font-size:13px}
+</style>
 </head>
+<body><div class="app">
+<section id="loginScreen" class="login-wrap">
+<div class="login-logo">📋</div><div class="brand" style="color:#f47721">FIELD REMINDER</div><h2 style="margin-top:10px">SPKRT 2027</h2>
+<p class="muted">Masuk menggunakan email dan password petugas.</p>
+<form id="loginForm">
+<label for="email">Email Petugas</label><input id="email" type="email" placeholder="nama@email.com" autocomplete="username" required>
+<label for="password">Password</label><input id="password" type="password" placeholder="Masukkan password" autocomplete="current-password" required>
+<button id="loginButton" class="primary" type="submit">Masuk Aplikasi →</button>
+</form><div id="loginMessage" class="message hidden" role="status"></div>
+</section>
+<section id="mainScreen" class="hidden">
+<header><div class="top-row"><div><div class="brand">BPS • SPKRT 2027</div><div class="brand-name">FIELD REMINDER</div><div class="header-sub">Pengingat kegiatan lapangan</div></div><button id="logoutButton" class="logout">Keluar</button></div></header>
+<main class="content">
+<div id="dashboardPage"><div class="welcome">Halo, <span id="namaPetugas">Petugas</span> 👋</div><div class="date-text" id="today"></div><div class="date-text" id="wilayahPetugas"></div>
+<div class="stats">
+<div class="stat"><div class="stat-icon">📅</div><div class="stat-number" id="countSchedule">0</div><div class="stat-label">Jadwal kegiatan</div></div>
+<div class="stat"><div class="stat-icon">📢</div><div class="stat-number" id="countInfo">0</div><div class="stat-label">Pengumuman aktif</div></div>
+<div class="stat"><div class="stat-icon">📝</div><div class="stat-number" id="countTask">0</div><div class="stat-label">Tugas khusus</div></div>
+<div class="stat"><div class="stat-icon">✅</div><div class="stat-number">—</div><div class="stat-label">Konfirmasi tugas</div></div>
+</div><div class="notice">👋 Selamat datang di SPKRT 2027. Periksa jadwal dan pengumuman secara berkala.</div>
+<div class="section-title">Jadwal Terdekat</div><div id="upcoming"><div class="loading">Memuat jadwal...</div></div></div>
+<div id="schedulePage" class="hidden"><h2>📅 Jadwal Kegiatan</h2><p class="muted">Daftar jadwal kegiatan lapangan SPKRT 2027.</p><div id="scheduleList"></div></div>
+<div id="announcementPage" class="hidden"><h2>📢 Pengumuman</h2><p class="muted">Informasi dan arahan untuk petugas.</p><div id="announcementList"></div></div>
+<div id="taskPage" class="hidden"><h2>📝 Tugas Khusus</h2><p class="muted">Daftar tugas dan tindak lanjut.</p><div id="taskList"></div></div>
+</main><footer>SPKRT 2027 • Field Reminder</footer>
+<nav><button class="active" data-page="dashboardPage"><span>🏠</span>Beranda</button><button data-page="schedulePage"><span>📅</span>Jadwal</button><button data-page="announcementPage"><span>📢</span>Info</button><button data-page="taskPage"><span>📝</span>Tugas</button></nav>
+</section></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
-<body>
-<div class="app">
+const firebaseConfig = {
+  apiKey: "AIzaSyC2BsmTiZDtU-8nHzTsohGKO1RfYuGcWoU",
+  authDomain: "spkrt-2027.firebaseapp.com",
+  projectId: "spkrt-2027",
+  storageBucket: "spkrt-2027.firebasestorage.app",
+  messagingSenderId: "409422737651",
+  appId: "1:409422737651:web:23092e77de8f04e5500786"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+let appData = {schedules:[],announcements:[],tasks:[]};
 
-  <section id="loginScreen" class="login-wrap">
-    <div class="login-logo">📋</div>
-    <div class="brand" style="color:#f47721">FIELD REMINDER</div>
-    <h2 style="margin-top:10px">SPKRT 2027</h2>
-    <p class="muted">Masuk untuk melihat jadwal dan informasi kegiatan lapangan.</p>
-
-    <label for="kode">Kode Petugas</label>
-    <input id="kode" placeholder="Contoh: SPK001" autocomplete="username">
-
-    <label for="pin">PIN Demo</label>
-    <input id="pin" type="password" placeholder="Masukkan PIN demo">
-
-    <button class="primary" onclick="login()">Masuk Aplikasi →</button>
-
-    <div class="demo-note">
-      <b>Mode simulasi:</b><br>
-      Kode: SPK001<br>
-      PIN demo: 123456<br>
-      Data ini hanya untuk uji tampilan, bukan akun petugas sebenarnya.
-    </div>
-  </section>
-
-  <section id="mainScreen" class="hidden">
-    <header>
-      <div class="top-row">
-        <div>
-          <div class="brand">BPS • SPKRT 2027</div>
-          <div class="brand-name">FIELD REMINDER</div>
-          <div class="header-sub">Pengingat kegiatan lapangan</div>
-        </div>
-        <button class="logout" onclick="logout()">Keluar</button>
-      </div>
-    </header>
-
-    <main class="content">
-      <div id="dashboardPage">
-        <div class="welcome">Halo, <span id="namaPetugas">Petugas Contoh 1</span> 👋</div>
-        <div class="date-text" id="today"></div>
-
-        <div class="stats">
-          <div class="stat">
-            <div class="stat-icon">📅</div>
-            <div class="stat-number" id="countSchedule">3</div>
-            <div class="stat-label">Jadwal kegiatan</div>
-          </div>
-          <div class="stat">
-            <div class="stat-icon">📢</div>
-            <div class="stat-number" id="countInfo">2</div>
-            <div class="stat-label">Pengumuman aktif</div>
-          </div>
-          <div class="stat">
-            <div class="stat-icon">📝</div>
-            <div class="stat-number" id="countTask">2</div>
-            <div class="stat-label">Tugas khusus</div>
-          </div>
-          <div class="stat">
-            <div class="stat-icon">✅</div>
-            <div class="stat-number">0</div>
-            <div class="stat-label">Konfirmasi demo</div>
-          </div>
-        </div>
-
-        <div class="notice">
-          👋 Selamat datang di SPKRT 2027. Periksa jadwal dan pengumuman secara berkala.
-        </div>
-
-        <div class="section-title">Jadwal Terdekat</div>
-        <div id="upcoming"></div>
-      </div>
-
-      <div id="schedulePage" class="hidden">
-        <h2>📅 Jadwal Kegiatan</h2>
-        <p class="muted">Daftar jadwal kegiatan lapangan SPKRT 2027.</p>
-        <div id="scheduleList"></div>
-      </div>
-
-      <div id="announcementPage" class="hidden">
-        <h2>📢 Pengumuman</h2>
-        <p class="muted">Informasi dan arahan untuk petugas.</p>
-        <div id="announcementList"></div>
-      </div>
-
-      <div id="taskPage" class="hidden">
-        <h2>📝 Tugas Khusus</h2>
-        <p class="muted">Daftar tugas dan tindak lanjut.</p>
-        <div id="taskList"></div>
-      </div>
-    </main>
-
-    <footer>SPKRT 2027 • Field Reminder • Versi simulasi</footer>
-
-    <nav>
-      <button class="active" data-page="dashboardPage" onclick="showPage('dashboardPage',this)">
-        <span>🏠</span>Beranda
-      </button>
-      <button data-page="schedulePage" onclick="showPage('schedulePage',this)">
-        <span>📅</span>Jadwal
-      </button>
-      <button data-page="announcementPage" onclick="showPage('announcementPage',this)">
-        <span>📢</span>Info
-      </button>
-      <button data-page="taskPage" onclick="showPage('taskPage',this)">
-        <span>📝</span>Tugas
-      </button>
-    </nav>
-  </section>
-</div>
-
-<script>
-  const schedules = [
-    {
-      date: "1 Januari 2027",
-      title: "Taruh Dokumen",
-      description: "Penyerahan dokumen"
-    },
-    {
-      date: "15 Januari 2027",
-      title: "Periksa Dokumen",
-      description: "Pemeriksaan dokumen"
-    },
-    {
-      date: "31 Januari 2027",
-      title: "Ambil Dokumen",
-      description: "Pengambilan dokumen"
-    }
-  ];
-
-  const announcements = [
-    {
-      title: "Persiapan Dokumen",
-      message: "Mohon siapkan dokumen sesuai jadwal.",
-      target: "SEMUA"
-    },
-    {
-      title: "Pengingat Badung",
-      message: "Mohon menindaklanjuti dokumen.",
-      target: "BADUNG"
-    }
-  ];
-
-  const tasks = [
-    {
-      title: "Perbaikan Dokumen",
-      description: "Mohon periksa kembali dokumen.",
-      target: "GIANYAR",
-      due: "5 Januari 2027"
-    },
-    {
-      title: "Konfirmasi Data",
-      description: "Mohon konfirmasi tindak lanjut.",
-      target: "Petugas P001",
-      due: "10 Januari 2027"
-    }
-  ];
-
-  function login() {
-    const kode = document.getElementById("kode").value.trim().toUpperCase();
-    const pin = document.getElementById("pin").value;
-
-    if (kode !== "SPK001" || pin !== "123456") {
-      alert("Kode atau PIN demo tidak sesuai.");
-      return;
-    }
-
-    document.getElementById("loginScreen").classList.add("hidden");
-    document.getElementById("mainScreen").classList.remove("hidden");
-
-    renderData();
-  }
-
-  function logout() {
-    document.getElementById("mainScreen").classList.add("hidden");
-    document.getElementById("loginScreen").classList.remove("hidden");
-    document.getElementById("pin").value = "";
-  }
-
-  function showPage(page, button) {
-    ["dashboardPage", "schedulePage", "announcementPage", "taskPage"]
-      .forEach(id => document.getElementById(id).classList.add("hidden"));
-
-    document.getElementById(page).classList.remove("hidden");
-
-    document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
-    button.classList.add("active");
-    window.scrollTo(0, 0);
-  }
-
-  function card(title, description, extra) {
-    return `
-      <div class="card">
-        <div class="card-title">${title}</div>
-        <div class="card-desc">${description}</div>
-        ${extra ? `<div class="tag">${extra}</div>` : ""}
-      </div>`;
-  }
-
-  function renderData() {
-    document.getElementById("today").textContent =
-      new Date().toLocaleDateString("id-ID", {
-        weekday: "long", day: "numeric", month: "long", year: "numeric"
-      });
-
-    document.getElementById("upcoming").innerHTML =
-      schedules.slice(0, 2).map(s =>
-        card(s.title, s.date + " • " + s.description, "JADWAL")
-      ).join("");
-
-    document.getElementById("scheduleList").innerHTML =
-      schedules.map(s =>
-        card(s.title, s.date + " • " + s.description, "AKTIF")
-      ).join("");
-
-    document.getElementById("announcementList").innerHTML =
-      announcements.map(a =>
-        card(a.title, a.message, "TARGET: " + a.target)
-      ).join("");
-
-    document.getElementById("taskList").innerHTML =
-      tasks.map(t =>
-        card(t.title, t.description + " • Tenggat: " + t.due, "TARGET: " + t.target)
-      ).join("");
-  }
-</script>
-
-</body>
-</html>
+function showMessage(message,type=""){const el=$("loginMessage");el.textContent=message;el.className="message"+(type?" "+type:"");}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function val(d,...keys){for(const k of keys)if(d[k]!==undefined&&d[k]!==null&&d[k]!=="")return d[k];return "";}
+function dateText(v){
+ if(!v)return "Tanggal belum diatur";
+ if(v&&typeof v.toDate==="function")v=v.toDate();
+ const d=(v instanceof Date)?v:new Date(v);
+ if(!Number.isNaN(d.getTime()))return d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Makassar"});
+ return String(v);
+}
+function card(title,desc,tag){return `<div class="card"><div class="card-title">${esc(title)}</div><div class="card-desc">${esc(desc)}</div>${tag?`<div class="tag">${esc(tag)}</div>`:""}</div>`;}
+function active(d){return ["AKTIF","ACTIVE","PUBLISHED","TERBIT"].includes(String(val(d,"status","status_akun")||"AKTIF").toUpperCase());}
+function matchesTarget(d,p){
+ const type=String(val(d,"target_jenis")||"SEMUA").toUpperCase();
+ const kab=String(val(d,"target_kabupaten")||"").trim().toLowerCase();
+ const targetId=String(val(d,"id_petugas")||"");
+ if(["SEMUA","ALL",""].includes(type))return true;
+ if(["KABUPATEN","KAB/KOTA","WILAYAH"].includes(type))return !!kab&&kab===String(p.kabupaten||"").trim().toLowerCase();
+ if(["PETUGAS","INDIVIDU"].includes(type))return !!targetId&&targetId===String(p.id_petugas||"");
+ return false;
+}
+async function getPetugas(email){
+ const q=query(collection(db,"petugas"),where("email_petugas","==",email.toLowerCase()));
+ const s=await getDocs(q);
+ if(s.empty)throw new Error("Email berhasil login, tetapi tidak ditemukan pada koleksi petugas. Periksa EMAIL_PETUGAS di MASTER_PETUGAS.");
+ if(s.size>1)throw new Error("Email tercatat lebih dari satu kali. Periksa data email ganda.");
+ return s.docs[0].data();
+}
+async function getRows(name){const s=await getDocs(collection(db,name));return s.docs.map(d=>d.data());}
+async function loadData(p){
+ const [jr,ar,tr]=await Promise.all([getRows("jadwal"),getRows("pengumuman"),getRows("tugas_khusus")]);
+ appData.schedules=jr.filter(active).map(x=>({title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(val(x,"tanggal","tenggat","date")),desc:val(x,"deskripsi","keterangan","description")})).sort((a,b)=>a.date.localeCompare(b.date,"id"));
+ appData.announcements=ar.filter(active).filter(x=>matchesTarget(x,p)).map(x=>({title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:val(x,"target_kabupaten","target_jenis")||"SEMUA"}));
+ appData.tasks=tr.filter(active).filter(x=>matchesTarget(x,p)).map(x=>({title:val(x,"judul_tugas","judul","title")||"Tugas khusus",desc:val(x,"deskripsi","keterangan","description"),due:dateText(val(x,"tenggat","tanggal","due_date"))}));
+ render();
+}
+function render(){
+ $("today").textContent=new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Makassar"});
+ $("countSchedule").textContent=appData.schedules.length;$("countInfo").textContent=appData.announcements.length;$("countTask").textContent=appData.tasks.length;
+ $("upcoming").innerHTML=appData.schedules.length?appData.schedules.slice(0,2).map(x=>card(x.title,x.date+(x.desc?" • "+x.desc:""),"JADWAL")).join(""):'<div class="empty">Belum ada jadwal aktif.</div>';
+ $("scheduleList").innerHTML=appData.schedules.length?appData.schedules.map(x=>card(x.title,x.date+(x.desc?" • "+x.desc:""),"AKTIF")).join(""):'<div class="empty">Belum ada jadwal aktif.</div>';
+ $("announcementList").innerHTML=appData.announcements.length?appData.announcements.map(x=>card(x.title,x.message,"TARGET: "+x.target)).join(""):'<div class="empty">Belum ada pengumuman untuk kamu.</div>';
+ $("taskList").innerHTML=appData.tasks.length?appData.tasks.map(x=>card(x.title,x.desc+(x.due?" • Tenggat: "+x.due:""),"TUGAS KHUSUS")).join(""):'<div class="empty">Belum ada tugas khusus untuk kamu.</div>';
+}
+async function showApp(user){
+ $("loginScreen").classList.add("hidden");$("mainScreen").classList.remove("hidden");
+ $("upcoming").innerHTML='<div class="loading">Memuat data dari Firebase...</div>';
+ try{
+  const p=await getPetugas(user.email||"");
+  if(String(p.status_akun||"").toUpperCase()!=="AKTIF"){await signOut(auth);throw new Error("Akun petugas tidak aktif. Hubungi admin.");}
+  $("namaPetugas").textContent=p.nama_petugas||"Petugas";$("wilayahPetugas").textContent=p.kabupaten?"Kabupaten/Kota: "+p.kabupaten:"";
+  await loadData(p);
+ }catch(e){console.error(e);await signOut(auth);$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");showMessage(e.message||"Gagal memuat data. Periksa aturan keamanan Firestore.","error");}
+}
+$("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();const email=$("email").value.trim().toLowerCase(),password=$("password").value,btn=$("loginButton");
+ btn.disabled=true;btn.textContent="Memeriksa akun...";$("loginMessage").classList.add("hidden");
+ try{await signInWithEmailAndPassword(auth,email,password);}
+ catch(err){console.error(err);let m="Login gagal. Periksa email dan password.";if(err.code==="auth/invalid-credential"||err.code==="auth/user-not-found")m="Email atau password tidak sesuai.";if(err.code==="auth/too-many-requests")m="Terlalu banyak percobaan. Coba lagi nanti.";if(err.code==="auth/network-request-failed")m="Koneksi internet bermasalah.";showMessage(m,"error");}
+ finally{btn.disabled=false;btn.textContent="Masuk Aplikasi →";}
+});
+$("logoutButton").addEventListener("click",async()=>{await signOut(auth);$("password").value="";});
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{["dashboardPage","schedulePage","announcementPage","taskPage"].forEach(id=>$(id).classList.add("hidden"));$(b.dataset.page).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");window.scrollTo(0,0);}));
+onAuthStateChanged(auth,user=>{if(user)showApp(user);else{$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");}});
+</script></body></html>
