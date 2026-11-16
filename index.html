@@ -48,7 +48,12 @@ footer{text-align:center;color:#aaa;font-size:10px;padding:18px}.loading{text-al
 <div class="stat"><div class="stat-icon">📢</div><div class="stat-number" id="countInfo">0</div><div class="stat-label">Pengumuman aktif</div></div>
 <div class="stat"><div class="stat-icon">📝</div><div class="stat-number" id="countTask">0</div><div class="stat-label">Tugas khusus</div></div>
 <div class="stat"><div class="stat-icon">✅</div><div class="stat-number">—</div><div class="stat-label">Konfirmasi tugas</div></div>
-</div><div class="notice">👋 Selamat datang di SPKRT 2027. Periksa jadwal dan pengumuman secara berkala.</div>
+</div>
+<div class="notice">
+ 👋 Selamat datang di SPKRT 2027. Periksa jadwal dan pengumuman secara berkala.
+ <button id="enableNotificationButton" class="primary" type="button" style="margin-top:12px;padding:11px">🔔 Aktifkan Notifikasi</button>
+ <div id="notificationMessage" style="margin-top:8px" aria-live="polite"></div>
+</div>
 <div class="section-title">Jadwal Terdekat</div><div id="upcoming"><div class="loading">Memuat jadwal...</div></div></div>
 <div id="schedulePage" class="hidden"><h2>📅 Jadwal Kegiatan</h2><p class="muted">Daftar jadwal kegiatan lapangan SPKRT 2027.</p><div id="scheduleList"></div></div>
 <div id="announcementPage" class="hidden"><h2>📢 Pengumuman</h2><p class="muted">Informasi dan arahan untuk petugas.</p><div id="announcementList"></div></div>
@@ -61,6 +66,7 @@ footer{text-align:center;color:#aaa;font-size:10px;padding:18px}.loading{text-al
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC2BsmTiZDtU-8nHzTsohGKO1RfYuGcWoU",
@@ -71,6 +77,7 @@ const firebaseConfig = {
   appId: "1:409422737651:web:23092e77de8f04e5500786"
 };
 const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const $ = id => document.getElementById(id);
@@ -186,6 +193,96 @@ function render(){
  document.querySelectorAll("[data-confirm-task]").forEach(b=>b.addEventListener("click",()=>confirmTask(b.dataset.confirmTask)));
 }
 
+
+function showNotificationMessage(message, isError=false) {
+ const el = $("notificationMessage");
+ if (!el) return;
+ el.textContent = message;
+ el.style.color = isError ? "#b42318" : "#176b38";
+}
+
+async function enablePushNotifications() {
+ const button = $("enableNotificationButton");
+ if (!currentUser || !currentPetugas) {
+  showNotificationMessage("Silakan login terlebih dahulu.", true);
+  return;
+ }
+ if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+  showNotificationMessage("Browser ini belum mendukung notifikasi web. Coba gunakan Chrome di Android.", true);
+  return;
+ }
+ if (!window.isSecureContext) {
+  showNotificationMessage("Notifikasi membutuhkan koneksi HTTPS.", true);
+  return;
+ }
+
+ try {
+  if (button) {
+   button.disabled = true;
+   button.textContent = "Mengaktifkan...";
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+   showNotificationMessage("Izin notifikasi belum diberikan. Aktifkan izin notifikasi untuk situs ini melalui pengaturan browser.", true);
+   return;
+  }
+
+  const registration = await navigator.serviceWorker.register(
+   "./firebase-messaging-sw.js",
+   { scope: "./" }
+  );
+
+  const token = await getToken(messaging, {
+   vapidKey: "BHR9D2BEbVZrppR9orCQ2dgRWFknX8isaBsumiPLJoIFejKi7MzYJYke14y8tcsgp4qrqxDY_L4JrSowVQSyPuI",
+   serviceWorkerRegistration: registration
+  });
+
+  if (!token) {
+   showNotificationMessage("Token notifikasi belum berhasil dibuat. Coba ulangi.", true);
+   return;
+  }
+
+  // Simpan satu token aktif per akun. Token ini diperlukan server pengirim FCM.
+  await setDoc(doc(db, "fcm_tokens", currentUser.uid), {
+   uid: currentUser.uid,
+   id_petugas: currentPetugas.id_petugas || "",
+   nama_petugas: currentPetugas.nama_petugas || "",
+   email_petugas: currentUser.email || "",
+   token: token,
+   platform: "web",
+   updated_at: serverTimestamp()
+  });
+
+  showNotificationMessage("Notifikasi berhasil diaktifkan pada perangkat ini.");
+  if (button) button.textContent = "✓ Notifikasi Aktif";
+ } catch (error) {
+  console.error("Gagal mengaktifkan notifikasi:", error);
+  let message = "Notifikasi belum berhasil diaktifkan.";
+  if (error.code === "messaging/permission-blocked") {
+   message = "Izin notifikasi diblokir oleh browser. Ubah izin situs menjadi Izinkan.";
+  } else if (error.code === "permission-denied" || error.code === "firestore/permission-denied") {
+   message = "Izin Firestore untuk menyimpan token belum tersedia. Aturan keamanan fcm_tokens perlu ditambahkan.";
+  } else if (error.code === "messaging/unsupported-browser") {
+   message = "Browser ini tidak mendukung Firebase Cloud Messaging.";
+  }
+  showNotificationMessage(message, true);
+ } finally {
+  if (button && button.textContent === "Mengaktifkan...") {
+   button.disabled = false;
+   button.textContent = "🔔 Aktifkan Notifikasi";
+  } else if (button && button.textContent !== "✓ Notifikasi Aktif") {
+   button.disabled = false;
+  }
+ }
+}
+
+onMessage(messaging, payload => {
+ const title = payload.notification?.title || "SPKRT 2027";
+ const body = payload.notification?.body || "Ada pengingat kegiatan untuk Anda.";
+ showNotificationMessage("Pesan baru diterima: " + title + " — " + body);
+});
+
 async function showApp(user){
  $("loginScreen").classList.add("hidden");$("mainScreen").classList.remove("hidden");
  $("upcoming").innerHTML='<div class="loading">Memuat data dari Firebase...</div>';
@@ -212,5 +309,6 @@ $("loginForm").addEventListener("submit",async e=>{
 $("logoutButton").addEventListener("click",async()=>{await signOut(auth);$("password").value="";});
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{["dashboardPage","schedulePage","announcementPage","taskPage","adminPage"].forEach(id=>$(id).classList.add("hidden"));$(b.dataset.page).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");window.scrollTo(0,0);}));
 $("kabupatenFilter").addEventListener("change",()=>{if(String(currentPetugas?.role||"").toUpperCase()==="ADMIN")renderAdmin();});
+$("enableNotificationButton").addEventListener("click", enablePushNotifications);
 onAuthStateChanged(auth,user=>{if(user)showApp(user);else{currentPetugas=null;currentUser=null;$("adminNav").classList.add("hidden");$("taskNav").classList.remove("hidden");appData={schedules:[],announcements:[],tasks:[],confirmations:{},petugas:[],allTasks:[],allStatuses:[]};$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");}});
 </script></body></html>
