@@ -68,7 +68,7 @@ footer{text-align:center;color:#aaa;font-size:10px;padding:18px}.loading{text-al
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import { getFirestore, collection, query, where, getDocs, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging.js";
 
 const firebaseConfig = {
@@ -204,6 +204,37 @@ function showNotificationMessage(message, isError=false) {
  el.style.color = isError ? "#b42318" : "#176b38";
 }
 
+async function refreshNotificationStatus() {
+  const button = $("enableNotificationButton");
+  if (!button) return;
+
+  button.disabled = false;
+  button.textContent = "🔔 Aktifkan Notifikasi";
+  showNotificationMessage("");
+
+  if (!currentUser || !currentPetugas) return;
+
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    return;
+  }
+
+  try {
+    const tokenSnap = await getDoc(doc(db, "fcm_tokens", currentUser.uid));
+    const savedToken = tokenSnap.exists() ? tokenSnap.data().token : "";
+
+    if (typeof savedToken === "string" && savedToken.length > 0) {
+      button.textContent = "✓ Notifikasi Aktif";
+      showNotificationMessage("Notifikasi sudah aktif pada perangkat ini.");
+    }
+  } catch (error) {
+    console.warn("Gagal memeriksa status notifikasi:", error);
+    showNotificationMessage(
+      "Status notifikasi belum dapat diperiksa. Kamu bisa mencoba aktivasi kembali.",
+      true
+    );
+  }
+}
+
 async function enablePushNotifications() {
  const button = $("enableNotificationButton");
  if (!currentUser || !currentPetugas) {
@@ -300,6 +331,8 @@ async function showApp(user){
   $("adminNav").classList.toggle("hidden",!isAdmin);
   $("taskNav").classList.toggle("hidden",isAdmin);
   await loadData(user);
+
+  await refreshNotificationStatus();
  }catch(e){console.error(e);currentPetugas=null;currentUser=null;await signOut(auth);$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");showMessage(e.message||"Gagal memuat data. Periksa aturan keamanan Firestore.","error");}
 }
 $("loginForm").addEventListener("submit",async e=>{
@@ -313,5 +346,5 @@ $("logoutButton").addEventListener("click",async()=>{await signOut(auth);$("pass
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{["dashboardPage","schedulePage","announcementPage","taskPage","adminPage"].forEach(id=>$(id).classList.add("hidden"));$(b.dataset.page).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");window.scrollTo(0,0);}));
 $("kabupatenFilter").addEventListener("change",()=>{if(String(currentPetugas?.role||"").toUpperCase()==="ADMIN")renderAdmin();});
 $("enableNotificationButton").addEventListener("click", enablePushNotifications);
-onAuthStateChanged(auth,user=>{if(user)showApp(user);else{currentPetugas=null;currentUser=null;$("adminNav").classList.add("hidden");$("taskNav").classList.remove("hidden");appData={schedules:[],announcements:[],tasks:[],confirmations:{},petugas:[],allTasks:[],allStatuses:[]};$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");}});
+onAuthStateChanged(auth,user=>{if(user)showApp(user);else{const notificationButton=$("enableNotificationButton");if(notificationButton){notificationButton.disabled=false;notificationButton.textContent="🔔 Aktifkan Notifikasi";}showNotificationMessage("");currentPetugas=null;currentUser=null;$("adminNav").classList.add("hidden");$("taskNav").classList.remove("hidden");appData={schedules:[],announcements:[],tasks:[],confirmations:{},petugas:[],allTasks:[],allStatuses:[]};$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");}});
 </script></body></html>
