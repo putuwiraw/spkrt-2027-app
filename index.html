@@ -55,6 +55,7 @@ footer{text-align:center;color:#aaa;font-size:10px;padding:18px}.loading{text-al
 <div class="notice">
  👋 Selamat datang di SPKRT 2027. Periksa jadwal dan pengumuman secara berkala.
  <button id="enableNotificationButton" class="primary" type="button" style="margin-top:12px;padding:11px">🔔 Aktifkan Notifikasi</button>
+ <button id="releaseDeviceButton" type="button" style="width:100%;margin-top:8px;padding:10px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#555;cursor:pointer">Lepaskan perangkat ini</button>
  <div id="notificationMessage" style="margin-top:8px" aria-live="polite"></div>
 </div>
 <div class="section-title">Jadwal Terdekat</div><div id="upcoming"><div class="loading">Memuat jadwal...</div></div></div>
@@ -87,6 +88,44 @@ const $ = id => document.getElementById(id);
 let appData = {schedules:[],announcements:[],tasks:[],confirmations:{},petugas:[],allTasks:[],allStatuses:[]};
 let currentPetugas = null;
 let currentUser = null;
+const DEVICE_ID_KEY = "spkrt2027_device_id";
+const DEVICE_RELEASED_KEY = "spkrt2027_device_released";
+
+function getDeviceId() {
+  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if (!id) {
+    id = (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : "dev-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+    localStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
+}
+
+async function getCurrentPushToken() {
+  const registration = await navigator.serviceWorker.register("./firebase-messaging-sw.js", { scope: "./" });
+  return await getToken(messaging, {
+    vapidKey: "BHR9D2BEbVZrppR9orCQ2dgRWFknX8isaBsumiPLJoIFejKi7MzYJYke14y8tcsgp4qrqxDY_L4JrSowVQSyPuI",
+    serviceWorkerRegistration: registration
+  });
+}
+
+async function saveDeviceTokenForCurrentUser(token) {
+  if (!currentUser || !currentPetugas || !token) return;
+  const deviceId = getDeviceId();
+  await setDoc(doc(db, "fcm_tokens", deviceId), {
+    device_id: deviceId,
+    uid: currentUser.uid,
+    id_petugas: currentPetugas.id_petugas || "",
+    nama_petugas: currentPetugas.nama_petugas || "",
+    email_petugas: currentUser.email || "",
+    token: token,
+    platform: "web",
+    active: true,
+    device_label: (navigator.userAgent || "Perangkat web").slice(0, 120),
+    updated_at: serverTimestamp()
+  }, { merge: true });
+}
 
 function showMessage(message,type=""){const el=$("loginMessage");el.textContent=message;el.className="message"+(type?" "+type:"");}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -207,31 +246,25 @@ function showNotificationMessage(message, isError=false) {
 async function refreshNotificationStatus() {
   const button = $("enableNotificationButton");
   if (!button) return;
-
   button.disabled = false;
   button.textContent = "🔔 Aktifkan Notifikasi";
   showNotificationMessage("");
-
   if (!currentUser || !currentPetugas) return;
-
-  if (!("Notification" in window) || Notification.permission !== "granted") {
-    return;
-  }
-
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
   try {
-    const tokenSnap = await getDoc(doc(db, "fcm_tokens", currentUser.uid));
-    const savedToken = tokenSnap.exists() ? tokenSnap.data().token : "";
-
-    if (typeof savedToken === "string" && savedToken.length > 0) {
-      button.textContent = "✓ Notifikasi Aktif";
-      showNotificationMessage("Notifikasi sudah aktif pada perangkat ini.");
+    if (localStorage.getItem(DEVICE_RELEASED_KEY) === "1") {
+      showNotificationMessage("Perangkat ini sudah dilepaskan. Tekan Aktifkan Notifikasi jika ingin mendaftarkannya kembali.");
+      return;
     }
+    const token = await getCurrentPushToken();
+    if (!token) return;
+    // Login akun baru pada HP yang sama otomatis mengalihkan token ke akun baru.
+    await saveDeviceTokenForCurrentUser(token);
+    button.textContent = "✓ Notifikasi Aktif";
+    showNotificationMessage("Perangkat ini terdaftar untuk akun " + (currentPetugas.nama_petugas || "petugas") + ". Notifikasi tetap dapat diterima saat aplikasi ditutup.");
   } catch (error) {
     console.warn("Gagal memeriksa status notifikasi:", error);
-    showNotificationMessage(
-      "Status notifikasi belum dapat diperiksa. Kamu bisa mencoba aktivasi kembali.",
-      true
-    );
+    showNotificationMessage("Status notifikasi belum dapat diperiksa. Kamu bisa mencoba aktivasi kembali.", true);
   }
 }
 
@@ -262,33 +295,14 @@ async function enablePushNotifications() {
    return;
   }
 
-  const registration = await navigator.serviceWorker.register(
-   "./firebase-messaging-sw.js",
-   { scope: "./" }
-  );
-
-  const token = await getToken(messaging, {
-   vapidKey: "BHR9D2BEbVZrppR9orCQ2dgRWFknX8isaBsumiPLJoIFejKi7MzYJYke14y8tcsgp4qrqxDY_L4JrSowVQSyPuI",
-   serviceWorkerRegistration: registration
-  });
-
+  const token = await getCurrentPushToken();
   if (!token) {
    showNotificationMessage("Token notifikasi belum berhasil dibuat. Coba ulangi.", true);
    return;
   }
-
-  // Simpan satu token aktif per akun. Token ini diperlukan server pengirim FCM.
-  await setDoc(doc(db, "fcm_tokens", currentUser.uid), {
-   uid: currentUser.uid,
-   id_petugas: currentPetugas.id_petugas || "",
-   nama_petugas: currentPetugas.nama_petugas || "",
-   email_petugas: currentUser.email || "",
-   token: token,
-   platform: "web",
-   updated_at: serverTimestamp()
-  });
-
-  showNotificationMessage("Notifikasi berhasil diaktifkan pada perangkat ini.");
+  localStorage.removeItem(DEVICE_RELEASED_KEY);
+  await saveDeviceTokenForCurrentUser(token);
+  showNotificationMessage("Notifikasi berhasil diaktifkan untuk akun ini pada perangkat ini.");
   if (button) button.textContent = "✓ Notifikasi Aktif";
  } catch (error) {
   console.error("Gagal mengaktifkan notifikasi:", error);
@@ -309,6 +323,28 @@ async function enablePushNotifications() {
    button.disabled = false;
   }
  }
+}
+
+async function releaseThisDevice() {
+  if (!currentUser || !currentPetugas) return;
+  const ok = confirm("Lepaskan perangkat ini dari notifikasi SPKRT 2027? Perangkat ini tidak akan menerima notifikasi sampai diaktifkan kembali.");
+  if (!ok) return;
+  try {
+    const deviceId = getDeviceId();
+    await setDoc(doc(db, "fcm_tokens", deviceId), {
+      device_id: deviceId,
+      uid: currentUser.uid,
+      active: false,
+      updated_at: serverTimestamp()
+    }, { merge: true });
+    localStorage.setItem(DEVICE_RELEASED_KEY, "1");
+    const button = $("enableNotificationButton");
+    if (button) button.textContent = "🔔 Aktifkan Notifikasi";
+    showNotificationMessage("Perangkat berhasil dilepaskan. Notifikasi untuk perangkat ini dihentikan.");
+  } catch (error) {
+    console.error("Gagal melepaskan perangkat:", error);
+    showNotificationMessage("Perangkat belum berhasil dilepaskan. Periksa koneksi dan izin Firestore.", true);
+  }
 }
 
 onMessage(messaging, payload => {
@@ -346,5 +382,6 @@ $("logoutButton").addEventListener("click",async()=>{await signOut(auth);$("pass
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{["dashboardPage","schedulePage","announcementPage","taskPage","adminPage"].forEach(id=>$(id).classList.add("hidden"));$(b.dataset.page).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");window.scrollTo(0,0);}));
 $("kabupatenFilter").addEventListener("change",()=>{if(String(currentPetugas?.role||"").toUpperCase()==="ADMIN")renderAdmin();});
 $("enableNotificationButton").addEventListener("click", enablePushNotifications);
+$("releaseDeviceButton").addEventListener("click", releaseThisDevice);
 onAuthStateChanged(auth,user=>{if(user)showApp(user);else{const notificationButton=$("enableNotificationButton");if(notificationButton){notificationButton.disabled=false;notificationButton.textContent="🔔 Aktifkan Notifikasi";}showNotificationMessage("");currentPetugas=null;currentUser=null;$("adminNav").classList.add("hidden");$("taskNav").classList.remove("hidden");appData={schedules:[],announcements:[],tasks:[],confirmations:{},petugas:[],allTasks:[],allStatuses:[]};$("mainScreen").classList.add("hidden");$("loginScreen").classList.remove("hidden");}});
 </script></body></html>
