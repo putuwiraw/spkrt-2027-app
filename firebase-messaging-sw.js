@@ -14,19 +14,41 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
+  console.log("[firebase-messaging-sw.js] Pesan diterima:", payload);
+
   const title = payload.notification?.title || "SPKRT 2027";
+
   const options = {
     body: payload.notification?.body || "Ada pengingat kegiatan untuk Anda.",
-    icon: "./icon-192.png",
-    data: payload.data || {}
+    icon: "https://putuwiraw.github.io/spkrt-2027-app/icon-192.png",
+    badge: "https://putuwiraw.github.io/spkrt-2027-app/icon-192.png",
+    data: payload.data || {},
+    tag: "spkrt-2027-notification",
+    renotify: true
   };
 
-  self.registration.showNotification(title, options);
+  return self.registration.showNotification(title, options);
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+
   event.waitUntil(
-    clients.openWindow("https://putuwiraw.github.io/spkrt-2027-app/")
+    clients.matchAll({
+      type: "window",
+      includeUncontrolled: true
+    }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.startsWith(
+          "https://putuwiraw.github.io/spkrt-2027-app/"
+        )) {
+          return client.focus();
+        }
+      }
+
+      return clients.openWindow(
+        "https://putuwiraw.github.io/spkrt-2027-app/"
+      );
+    })
   );
 });
