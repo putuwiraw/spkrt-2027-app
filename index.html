@@ -185,7 +185,7 @@ async function loadData(user){
   const tr=ts.docs.map(d=>({docId:d.id,...d.data()}));
   appData.confirmations={};
   ss.docs.forEach(d=>{const x=d.data();if(x.id_tugas)appData.confirmations[x.id_tugas]=x;});
-  appData.tasks=tr.filter(active).map(x=>({id:x.docId,idTugas:val(x,"id_tugas","ID_TUGAS")||x.docId,title:val(x,"judul_tugas","judul","title")||"Tugas khusus",desc:val(x,"deskripsi","keterangan","description"),due:dateText(val(x,"tenggat","tanggal","due_date"))}));
+  appData.tasks=tr.filter(active).map(x=>{const assignedRaw=val(x,"tanggal_penugasan","TANGGAL_PENUGASAN");const dueRaw=val(x,"tenggat","tanggal","due_date");return {id:x.docId,idTugas:val(x,"id_tugas","ID_TUGAS")||x.docId,title:val(x,"judul_tugas","judul","title")||"Tugas khusus",desc:val(x,"deskripsi","keterangan","description"),assigned:assignedRaw?dateText(assignedRaw):"Belum diatur",due:dueRaw?dateText(dueRaw):""};});
   appData.schedules=jr.filter(active).map(x=>{const rawDate=val(x,"tanggal","tenggat","date");return {title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(rawDate),sortKey:dateKey(rawDate),desc:val(x,"deskripsi","keterangan","description")};}).sort((a,b)=>a.sortKey-b.sortKey);
   appData.announcements=ar.filter(active).map(x=>{const rawDate=val(x,"tanggal_publikasi","tanggal","created_at","date");return {title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS",date:dateText(rawDate),sortKey:dateKey(rawDate)};});
  }
@@ -196,7 +196,7 @@ function renderTask(t){
  const status=appData.confirmations[t.idTugas];
  const done=String(status?.status_konfirmasi||"").toUpperCase()==="SELESAI";
  const info=done?`<div class="tag" style="background:#e8f5ec;color:#176b38">✓ SELESAI</div><div class="card-desc">Dikonfirmasi: ${esc(dateTimeText(status.waktu_konfirmasi))}</div>`:`<div class="tag">BELUM DIKONFIRMASI</div><button class="primary" style="margin-top:12px;padding:11px" data-confirm-task="${esc(t.idTugas)}">Konfirmasi Selesai</button>`;
- return `<div class="card"><div class="card-title">${esc(t.title)}</div><div class="card-desc">${esc(t.desc)}${t.due?" • Tenggat: "+esc(t.due):""}</div>${info}</div>`;
+ return `<div class="card"><div class="card-title">${esc(t.title)}</div><div class="card-desc">${esc(t.desc)}</div><div class="card-desc" style="margin-top:7px">Tanggal penugasan: ${esc(t.assigned||"Belum diatur")}${t.due?" • Tenggat: "+esc(t.due):""}</div>${info}</div>`;
 }
 function dateTimeText(v){
  if(!v)return "baru saja";
