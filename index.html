@@ -2,39 +2,39 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f47721">
+<meta name="theme-color" content="#171717">
 <meta name="description" content="SPKRT 2027 Field Reminder">
 <link rel="manifest" href="./manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <title>SPKRT 2027 - Field Reminder</title>
 <style>
-:root{--orange:#f47721;--orange-dark:#df5e0c;--cream:#fff7f0;--ink:#292929;--muted:#777;--line:#eee;--red:#b42318}
-*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:var(--ink);font-family:Arial,sans-serif}button,input{font:inherit}
+:root{--orange:#DDA329;--orange-dark:#B77916;--cream:#F5F3EE;--ink:#171717;--muted:#777;--line:#EAE7E0;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:#F5F3EE;color:var(--ink);font-family:Arial,sans-serif}button,input{font:inherit}
 .app{max-width:520px;min-height:100vh;margin:auto;background:#fff;position:relative;padding-bottom:82px}
-header{background:var(--orange);color:#fff;padding:23px 20px 27px;border-radius:0 0 22px 22px}
+header{background:#171717;color:#fff;padding:23px 20px 27px;border-radius:0 0 22px 22px}
 .brand{font-size:12px;letter-spacing:1.5px;font-weight:bold;opacity:.9}.brand-name{font-size:23px;font-weight:800;margin-top:8px}.header-sub{font-size:13px;margin-top:5px;opacity:.9}
 .content{padding:20px}.login-wrap{padding:35px 24px}.login-logo{width:65px;height:65px;border-radius:20px;display:grid;place-items:center;background:var(--cream);color:var(--orange);font-size:30px;margin-bottom:22px}
 h2{font-size:21px;margin:0 0 8px}.muted{color:var(--muted);font-size:13px;line-height:1.6}
 label{display:block;font-size:13px;font-weight:bold;margin:19px 0 8px}input{width:100%;padding:14px;border:1px solid #ddd;border-radius:10px;outline-color:var(--orange);background:#fff}
-.primary{width:100%;border:0;background:var(--orange);color:#fff;padding:15px;border-radius:11px;font-weight:bold;margin-top:22px;cursor:pointer}.primary:disabled{opacity:.65;cursor:wait}.primary:active{background:var(--orange-dark)}
-.message{margin-top:14px;padding:12px;border-radius:10px;background:var(--cream);color:#9b4b13;font-size:12px;line-height:1.6}.error{background:#fff1f0;color:var(--red)}
+.primary{width:100%;border:0;background:var(--orange);color:#171717;padding:15px;border-radius:11px;font-weight:bold;margin-top:22px;cursor:pointer}.primary:disabled{opacity:.65;cursor:wait}.primary:active{background:var(--orange-dark);color:#171717}
+.message{margin-top:14px;padding:12px;border-radius:10px;background:var(--cream);color:#7A5415;font-size:12px;line-height:1.6}.error{background:#fff1f0;color:var(--red)}
 .welcome{font-size:19px;font-weight:bold;margin-bottom:5px}.date-text{color:var(--muted);font-size:12px}.section-title{font-weight:bold;margin:25px 0 13px;font-size:16px}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}.stat{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}
 .stat-icon{font-size:22px}.stat-number{font-size:25px;font-weight:bold;margin-top:9px}.stat-label{color:var(--muted);font-size:12px;margin-top:4px}
 .card{border:1px solid var(--line);border-radius:13px;padding:15px;margin-bottom:11px;background:#fff}.card-title{font-weight:bold;font-size:14px}
-.card-desc{color:var(--muted);font-size:12px;line-height:1.6;margin-top:6px;white-space:pre-wrap}.tag{display:inline-block;padding:5px 9px;background:var(--cream);color:#b85a15;border-radius:20px;font-size:10px;margin-top:9px;font-weight:bold}
+.card-desc{color:var(--muted);font-size:12px;line-height:1.6;margin-top:6px;white-space:pre-wrap}.tag{display:inline-block;padding:5px 9px;background:var(--cream);color:#8A5A0A;border-radius:20px;font-size:10px;margin-top:9px;font-weight:bold}
 .empty{text-align:center;padding:35px 15px;color:var(--muted);font-size:13px}
 nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:10px 3px calc(10px + env(safe-area-inset-bottom));z-index:5}
-nav button{border:0;background:none;color:#888;font-size:10px;cursor:pointer;display:grid;gap:5px;justify-items:center}nav button span{font-size:20px}nav button.active{color:var(--orange);font-weight:bold}
+nav button{border:0;background:none;color:#888;font-size:10px;cursor:pointer;display:grid;gap:5px;justify-items:center}nav button span{font-size:20px}nav button.active{color:#B77916;font-weight:bold}
 .top-row{display:flex;justify-content:space-between;align-items:center;gap:10px}.logout{border:1px solid #ffffff88;color:#fff;background:transparent;padding:8px 12px;border-radius:9px;font-size:12px;cursor:pointer}
-.notice{background:#fff7ed;border-left:4px solid var(--orange);padding:12px;border-radius:8px;font-size:12px;line-height:1.6;margin-top:14px}.hidden{display:none!important}
+.notice{background:#F5F3EE;border-left:4px solid var(--orange);padding:12px;border-radius:8px;font-size:12px;line-height:1.6;margin-top:14px}.hidden{display:none!important}
 footer{text-align:center;color:#aaa;font-size:10px;padding:18px}.loading{text-align:center;padding:24px;color:var(--muted);font-size:13px}
 .admin-tools{display:grid;grid-template-columns:1fr;gap:10px;margin:16px 0}.admin-tools select{width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;background:#fff}.progress{height:9px;background:#eee;border-radius:20px;overflow:hidden;margin-top:8px}.progress>span{display:block;height:100%;background:var(--orange)}.small-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}.small-table th,.small-table td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}.small-table th{color:var(--muted);font-weight:bold}.admin-section{margin-top:22px}.admin-kicker{font-size:11px;color:var(--muted);margin-top:4px}
 </style>
 </head>
 <body><div class="app">
 <section id="loginScreen" class="login-wrap">
-<div class="login-logo">📋</div><div class="brand" style="color:#f47721">FIELD REMINDER</div><h2 style="margin-top:10px">SPKRT 2027</h2>
+<div class="login-logo">📋</div><div class="brand" style="color:#B77916">FIELD REMINDER</div><h2 style="margin-top:10px">SPKRT 2027</h2>
 <p class="muted">Masuk menggunakan email dan password petugas.</p>
 <form id="loginForm">
 <label for="email">Email Petugas</label><input id="email" type="email" placeholder="nama@email.com" autocomplete="username" required>
@@ -222,7 +222,7 @@ function renderAdmin(){
  const kabEntries=Object.entries(rowsByKab);
  $("adminKabupatenTable").innerHTML=kabEntries.length?`<table class="small-table"><thead><tr><th>Kabupaten/Kota</th><th>Petugas</th><th>Tugas</th><th>Selesai</th></tr></thead><tbody>${kabEntries.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.petugas}</td><td>${v.total}</td><td>${v.done}</td></tr>`).join("")}</tbody></table>`:'<div class="empty">Belum ada data petugas.</div>';
  $("adminPetugasTable").innerHTML=people.length?`<table class="small-table"><thead><tr><th>Petugas</th><th>Kabupaten/Kota</th><th>Tugas</th><th>Selesai</th></tr></thead><tbody>${people.map(p=>{const pt=tasks.filter(t=>t.target_uid===p.auth_uid);const pd=pt.filter(t=>String(appData.confirmations[t.id_tugas||t.id]?.status_konfirmasi||"").toUpperCase()==="SELESAI").length;return `<tr><td>${esc(p.nama_petugas||p.id_petugas)}</td><td>${esc(p.kabupaten||"-")}</td><td>${pt.length}</td><td>${pd}</td></tr>`;}).join("")}</tbody></table>`:'<div class="empty">Belum ada petugas.</div>';
- $("adminTaskTable").innerHTML=tasks.length?`<table class="small-table"><thead><tr><th>Tugas</th><th>Petugas</th><th>Tenggat</th><th>Status</th></tr></thead><tbody>${tasks.map(t=>{const p=people.find(x=>x.auth_uid===t.target_uid);const id=t.id_tugas||t.id;const isDone=String(appData.confirmations[id]?.status_konfirmasi||"").toUpperCase()==="SELESAI";return `<tr><td>${esc(t.judul_tugas||t.judul||id)}</td><td>${esc(p?.nama_petugas||t.id_petugas||"-")}</td><td>${esc(dateText(t.tenggat))}</td><td>${isDone?'<span style="color:#176b38;font-weight:bold">SELESAI</span>':'<span style="color:#b85a15;font-weight:bold">BELUM</span>'}</td></tr>`;}).join("")}</tbody></table>`:'<div class="empty">Belum ada tugas aktif untuk filter ini.</div>';
+ $("adminTaskTable").innerHTML=tasks.length?`<table class="small-table"><thead><tr><th>Tugas</th><th>Petugas</th><th>Tenggat</th><th>Status</th></tr></thead><tbody>${tasks.map(t=>{const p=people.find(x=>x.auth_uid===t.target_uid);const id=t.id_tugas||t.id;const isDone=String(appData.confirmations[id]?.status_konfirmasi||"").toUpperCase()==="SELESAI";return `<tr><td>${esc(t.judul_tugas||t.judul||id)}</td><td>${esc(p?.nama_petugas||t.id_petugas||"-")}</td><td>${esc(dateText(t.tenggat))}</td><td>${isDone?'<span style="color:#176b38;font-weight:bold">SELESAI</span>':'<span style="color:#8A5A0A;font-weight:bold">BELUM</span>'}</td></tr>`;}).join("")}</tbody></table>`:'<div class="empty">Belum ada tugas aktif untuk filter ini.</div>';
 }
 
 function render(){
