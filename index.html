@@ -177,7 +177,7 @@ async function loadData(user){
   sr.forEach(x=>{if(x.id_tugas)appData.confirmations[x.id_tugas]=x;});
   appData.tasks=[];
   appData.schedules=jr.filter(active).map(x=>{const rawDate=val(x,"tanggal","tenggat","date");return {title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(rawDate),sortKey:dateKey(rawDate),desc:val(x,"deskripsi","keterangan","description")};}).sort((a,b)=>a.sortKey-b.sortKey);
-  appData.announcements=ar.filter(active).map(x=>({title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS"}));
+  appData.announcements=ar.filter(active).map(x=>{const rawDate=val(x,"tanggal_publikasi","tanggal","created_at","date");return {title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS",date:dateText(rawDate),sortKey:dateKey(rawDate)};});
  }else{
   const taskQuery=query(collection(db,"tugas_khusus"),where("target_uid","==",user.uid));
   const statusQuery=query(collection(db,"status_tugas"),where("auth_uid","==",user.uid));
@@ -187,7 +187,7 @@ async function loadData(user){
   ss.docs.forEach(d=>{const x=d.data();if(x.id_tugas)appData.confirmations[x.id_tugas]=x;});
   appData.tasks=tr.filter(active).map(x=>({id:x.docId,idTugas:val(x,"id_tugas","ID_TUGAS")||x.docId,title:val(x,"judul_tugas","judul","title")||"Tugas khusus",desc:val(x,"deskripsi","keterangan","description"),due:dateText(val(x,"tenggat","tanggal","due_date"))}));
   appData.schedules=jr.filter(active).map(x=>{const rawDate=val(x,"tanggal","tenggat","date");return {title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(rawDate),sortKey:dateKey(rawDate),desc:val(x,"deskripsi","keterangan","description")};}).sort((a,b)=>a.sortKey-b.sortKey);
-  appData.announcements=ar.filter(active).map(x=>({title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS"}));
+  appData.announcements=ar.filter(active).map(x=>{const rawDate=val(x,"tanggal_publikasi","tanggal","created_at","date");return {title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS",date:dateText(rawDate),sortKey:dateKey(rawDate)};});
  }
  render();
  if(isAdmin)renderAdmin();
@@ -282,7 +282,18 @@ function render(){
  const upcomingSchedules=appData.schedules.filter(x=>x.sortKey>=todayDateKey()&&x.sortKey>0).slice(0,5);
  $("upcoming").innerHTML=upcomingSchedules.length?upcomingSchedules.map(x=>card(x.title,x.date+(x.desc?" • "+x.desc:""),"JADWAL")).join(""):'<div class="empty">Belum ada jadwal mendatang.</div>';
  $("scheduleList").innerHTML=renderGroupedSchedules();
- $("announcementList").innerHTML=appData.announcements.length?appData.announcements.map(x=>card(x.title,x.message,"TARGET: "+x.target)).join(""):'<div class="empty">Belum ada pengumuman untuk kamu.</div>';
+ const announcementsSorted=appData.announcements.slice().sort((a,b)=>(b.sortKey||0)-(a.sortKey||0));
+ const cutoffDate=new Date();cutoffDate.setDate(cutoffDate.getDate()-4);
+ const cutoffKey=dateKey(cutoffDate);
+ const latestAnnouncements=announcementsSorted.filter(x=>x.sortKey>=cutoffKey&&x.sortKey>0);
+ const archivedAnnouncements=announcementsSorted.filter(x=>!x.sortKey||x.sortKey<cutoffKey);
+ const announcementCard=x=>card(x.title,(x.date&&x.date!=="Tanggal belum diatur"?x.date+" • ":"")+x.message,"TARGET: "+x.target);
+ $("announcementList").innerHTML=`
+  <div class="section-title" style="margin-top:18px">Pengumuman Terbaru</div>
+  ${latestAnnouncements.length?latestAnnouncements.map(announcementCard).join(""):'<div class="empty">Belum ada pengumuman terbaru dalam 5 hari terakhir.</div>'}
+  <div class="section-title" style="margin-top:25px">Arsip Pengumuman</div>
+  ${archivedAnnouncements.length?archivedAnnouncements.map(announcementCard).join(""):'<div class="empty">Belum ada arsip pengumuman.</div>'}
+ `;
  $("taskList").innerHTML=appData.tasks.length?appData.tasks.map(renderTask).join(""):'<div class="empty">Belum ada tugas khusus untuk kamu.</div>';
  document.querySelectorAll("[data-confirm-task]").forEach(b=>b.addEventListener("click",()=>confirmTask(b.dataset.confirmTask)));
 }
