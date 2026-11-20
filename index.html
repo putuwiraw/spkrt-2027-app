@@ -157,6 +157,33 @@ function todayDateKey(){
 }
 function card(title,desc,tag,tagClass=""){return `<div class="card"><div class="card-title">${esc(title)}</div><div class="card-desc">${esc(desc)}</div>${tag?`<div class="tag ${esc(tagClass)}">${esc(tag)}</div>`:""}</div>`;}
 function active(d){return ["AKTIF","ACTIVE","PUBLISHED","TERBIT"].includes(String(val(d,"status","status_akun")||"AKTIF").toUpperCase());}
+function normalizeAudience(value){return String(value||"").trim().toUpperCase().replace(/\s+/g," ");}
+function mapAnnouncement(x){
+ const jenis=normalizeAudience(val(x,"target_jenis","TARGET_JENIS"));
+ const kabupaten=normalizeAudience(val(x,"target_kabupaten","TARGET_KABUPATEN"));
+ const isAdmin=String(currentPetugas?.role||"").toUpperCase()==="ADMIN";
+ let target="";
+ let matches=false;
+ if(jenis==="SEMUA"){
+  target="SEMUA PETUGAS";
+  matches=true;
+ }else if(jenis==="KABUPATEN" && kabupaten){
+  target="KABUPATEN "+kabupaten;
+  matches=isAdmin || normalizeAudience(currentPetugas?.kabupaten)===kabupaten;
+ }else{
+  target="TARGET BELUM DIATUR";
+  matches=isAdmin;
+ }
+ if(!matches)return null;
+ const rawDate=val(x,"tanggal_publikasi","tanggal","created_at","date");
+ return {
+  title:val(x,"judul","title")||"Pengumuman",
+  message:val(x,"pesan","message","deskripsi"),
+  target,
+  date:dateText(rawDate),
+  sortKey:dateKey(rawDate)
+ };
+}
 async function getPetugas(email, uid){
  const q=query(collection(db,"petugas"),where("email_petugas","==",email.toLowerCase()),where("auth_uid","==",uid));
  const s=await getDocs(q);
@@ -177,7 +204,7 @@ async function loadData(user){
   sr.forEach(x=>{if(x.id_tugas)appData.confirmations[x.id_tugas]=x;});
   appData.tasks=[];
   appData.schedules=jr.filter(active).map(x=>{const rawDate=val(x,"tanggal","tenggat","date");return {title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(rawDate),sortKey:dateKey(rawDate),desc:val(x,"deskripsi","keterangan","description")};}).sort((a,b)=>a.sortKey-b.sortKey);
-  appData.announcements=ar.filter(active).map(x=>{const rawDate=val(x,"tanggal_publikasi","tanggal","created_at","date");return {title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS",date:dateText(rawDate),sortKey:dateKey(rawDate)};});
+  appData.announcements=ar.filter(active).map(x=>mapAnnouncement(x)).filter(x=>x!==null);
  }else{
   const taskQuery=query(collection(db,"tugas_khusus"),where("target_uid","==",user.uid));
   const statusQuery=query(collection(db,"status_tugas"),where("auth_uid","==",user.uid));
@@ -187,7 +214,7 @@ async function loadData(user){
   ss.docs.forEach(d=>{const x=d.data();if(x.id_tugas)appData.confirmations[x.id_tugas]=x;});
   appData.tasks=tr.filter(active).map(x=>{const publishedRaw=val(x,"tanggal_penugasan","TANGGAL_PENUGASAN","tanggal_diumumkan","TANGGAL_DIUMUMKAN","created_at");const dueRaw=val(x,"tenggat","tanggal","due_date");return {id:x.docId,idTugas:val(x,"id_tugas","ID_TUGAS")||x.docId,title:val(x,"judul_tugas","judul","title")||"Tugas khusus",desc:val(x,"deskripsi","keterangan","description"),published:publishedRaw?dateText(publishedRaw):"",due:dueRaw?dateText(dueRaw):""};});
   appData.schedules=jr.filter(active).map(x=>{const rawDate=val(x,"tanggal","tenggat","date");return {title:val(x,"nama_kegiatan","judul","title")||"Kegiatan",date:dateText(rawDate),sortKey:dateKey(rawDate),desc:val(x,"deskripsi","keterangan","description")};}).sort((a,b)=>a.sortKey-b.sortKey);
-  appData.announcements=ar.filter(active).map(x=>{const rawDate=val(x,"tanggal_publikasi","tanggal","created_at","date");return {title:val(x,"judul","title")||"Pengumuman",message:val(x,"pesan","message","deskripsi"),target:"SEMUA PETUGAS",date:dateText(rawDate),sortKey:dateKey(rawDate)};});
+  appData.announcements=ar.filter(active).map(x=>mapAnnouncement(x)).filter(x=>x!==null);
  }
  render();
  if(isAdmin)renderAdmin();
