@@ -22,7 +22,7 @@ label{display:block;font-size:13px;font-weight:bold;margin:19px 0 8px}input{widt
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}.stat{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}
 .stat-icon{font-size:22px}.stat-number{font-size:25px;font-weight:bold;margin-top:9px}.stat-label{color:var(--muted);font-size:12px;margin-top:4px}
 .card{border:1px solid var(--line);border-radius:13px;padding:15px;margin-bottom:11px;background:#fff}.schedule-month{border:1px solid var(--line);border-radius:13px;margin:12px 0;background:#fff;overflow:hidden}.schedule-month summary{list-style:none;cursor:pointer;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:bold;color:var(--ink)}.schedule-month summary::-webkit-details-marker{display:none}.schedule-month summary:after{content:"＋";color:var(--orange-dark);font-size:18px}.schedule-month[open] summary:after{content:"−"}.schedule-month-count{font-size:11px;font-weight:normal;color:var(--muted);margin-left:auto}.schedule-month-content{padding:0 12px 5px}.schedule-month-content .card{margin-bottom:9px}.card-title{font-weight:bold;font-size:14px}
-.card-desc{color:var(--muted);font-size:12px;line-height:1.6;margin-top:6px;white-space:pre-wrap}.tag{display:inline-block;padding:5px 9px;background:var(--cream);color:#8A5A0A;border-radius:20px;font-size:10px;margin-top:9px;font-weight:bold}
+.card-desc{color:var(--muted);font-size:12px;line-height:1.6;margin-top:6px;white-space:pre-wrap}.tag{display:inline-block;padding:5px 9px;background:var(--cream);color:#8A5A0A;border-radius:20px;font-size:10px;margin-top:9px;font-weight:bold} .tag-overdue{background:#fff1f0;color:#b42318}
 .empty{text-align:center;padding:35px 15px;color:var(--muted);font-size:13px}
 nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:10px 3px calc(10px + env(safe-area-inset-bottom));z-index:5}
 nav button{border:0;background:none;color:#888;font-size:10px;cursor:pointer;display:grid;gap:5px;justify-items:center}nav button span{font-size:20px}nav button.active{color:#B77916;font-weight:bold}
@@ -155,7 +155,7 @@ function dateKey(v){
 function todayDateKey(){
  return dateKey(new Date());
 }
-function card(title,desc,tag){return `<div class="card"><div class="card-title">${esc(title)}</div><div class="card-desc">${esc(desc)}</div>${tag?`<div class="tag">${esc(tag)}</div>`:""}</div>`;}
+function card(title,desc,tag,tagClass=""){return `<div class="card"><div class="card-title">${esc(title)}</div><div class="card-desc">${esc(desc)}</div>${tag?`<div class="tag ${esc(tagClass)}">${esc(tag)}</div>`:""}</div>`;}
 function active(d){return ["AKTIF","ACTIVE","PUBLISHED","TERBIT"].includes(String(val(d,"status","status_akun")||"AKTIF").toUpperCase());}
 async function getPetugas(email, uid){
  const q=query(collection(db,"petugas"),where("email_petugas","==",email.toLowerCase()),where("auth_uid","==",uid));
@@ -243,6 +243,12 @@ function renderAdmin(){
  $("adminTaskTable").innerHTML=tasks.length?`<table class="small-table"><thead><tr><th>Tugas</th><th>Petugas</th><th>Tenggat</th><th>Status</th></tr></thead><tbody>${tasks.map(t=>{const p=people.find(x=>x.auth_uid===t.target_uid);const id=t.id_tugas||t.id;const isDone=String(appData.confirmations[id]?.status_konfirmasi||"").toUpperCase()==="SELESAI";return `<tr><td>${esc(t.judul_tugas||t.judul||id)}</td><td>${esc(p?.nama_petugas||t.id_petugas||"-")}</td><td>${esc(dateText(t.tenggat))}</td><td>${isDone?'<span style="color:#176b38;font-weight:bold">SELESAI</span>':'<span style="color:#8A5A0A;font-weight:bold">BELUM</span>'}</td></tr>`;}).join("")}</tbody></table>`:'<div class="empty">Belum ada tugas aktif untuk filter ini.</div>';
 }
 
+function renderScheduleCard(item,todayKey){
+ const overdue=item.sortKey>0&&item.sortKey<todayKey;
+ const label=overdue?"SUDAH LEWAT":"AKTIF";
+ return card(item.title,item.date+(item.desc?" • "+item.desc:""),label,overdue?"tag-overdue":"");
+}
+
 function renderGroupedSchedules(){
  if(!appData.schedules.length)return '<div class="empty">Belum ada jadwal aktif.</div>';
  const groups=new Map();
@@ -270,9 +276,9 @@ function renderGroupedSchedules(){
    const startName=new Date(Date.UTC(year,monthStart,1)).toLocaleDateString("id-ID",{month:"long",timeZone:"UTC"});
    const endName=new Date(Date.UTC(year,monthEnd,1)).toLocaleDateString("id-ID",{month:"long",timeZone:"UTC"});
    label=`Triwulan ${["I","II","III","IV"][quarter-1]} ${year}`;
-   return `<details class="schedule-month"${key===currentQuarterKey?" open":""}><summary><span>${esc(label)}</span><span class="schedule-month-count">${startName}–${endName} · ${items.length} kegiatan</span></summary><div class="schedule-month-content">${items.map(x=>card(x.title,x.date+(x.desc?" • "+x.desc:""),"AKTIF")).join("")}</div></details>`;
+   return `<details class="schedule-month"${key===currentQuarterKey?" open":""}><summary><span>${esc(label)}</span><span class="schedule-month-count">${startName}–${endName} · ${items.length} kegiatan</span></summary><div class="schedule-month-content">${items.map(x=>renderScheduleCard(x,todayKey)).join("")}</div></details>`;
   }
-  return `<details class="schedule-month"><summary><span>${esc(label)}</span><span class="schedule-month-count">${items.length} kegiatan</span></summary><div class="schedule-month-content">${items.map(x=>card(x.title,x.date+(x.desc?" • "+x.desc:""),"AKTIF")).join("")}</div></details>`;
+  return `<details class="schedule-month"><summary><span>${esc(label)}</span><span class="schedule-month-count">${items.length} kegiatan</span></summary><div class="schedule-month-content">${items.map(x=>renderScheduleCard(x,todayKey)).join("")}</div></details>`;
  }).join("");
 }
 
